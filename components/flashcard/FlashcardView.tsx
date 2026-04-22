@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { RotateCw } from "lucide-react";
 import { LessonRenderer } from "@/components/lesson/LessonRenderer";
 import { cn } from "@/lib/utils";
@@ -9,18 +9,14 @@ import { cn } from "@/lib/utils";
 type Props = {
   front: string;
   back: string;
-  /** Reset flip when this changes (moving to a new card in the deck). */
-  resetKey?: string;
   /** Called the first time a card is flipped from front→back. */
   onReveal?: () => void;
 };
 
-export function FlashcardView({ front, back, resetKey, onReveal }: Props) {
+// Parent resets state by passing a new `key` prop when moving to a new card.
+export function FlashcardView({ front, back, onReveal }: Props) {
   const [flipped, setFlipped] = useState(false);
-
-  useEffect(() => {
-    setFlipped(false);
-  }, [resetKey]);
+  const reduceMotion = useReducedMotion();
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -58,7 +54,11 @@ export function FlashcardView({ front, back, resetKey, onReveal }: Props) {
       <motion.div
         className="relative h-full w-full [transform-style:preserve-3d]"
         animate={{ rotateY: flipped ? 180 : 0 }}
-        transition={{ duration: 0.45, ease: [0.25, 0.1, 0.25, 1] }}
+        transition={
+          reduceMotion
+            ? { duration: 0 }
+            : { duration: 0.45, ease: [0.25, 0.1, 0.25, 1] }
+        }
       >
         <Face side="front" visible={!flipped}>
           <LessonRenderer markdown={front} />

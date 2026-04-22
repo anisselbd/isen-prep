@@ -69,9 +69,9 @@ export function FlashcardDeck({ cards, onReview, onComplete }: Props) {
         <span>{revealed ? "Note ta réponse" : "Clic ou Espace pour retourner"}</span>
       </div>
       <FlashcardView
+        key={current.id}
         front={current.front_md}
         back={current.back_md}
-        resetKey={current.id}
         onReveal={() => setRevealed(true)}
       />
       <div className="grid grid-cols-4 gap-2">
