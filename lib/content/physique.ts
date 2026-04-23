@@ -244,6 +244,17 @@ $$\\sum_{k} \\varepsilon_k \\, U_k \\;=\\; 0$$
 
 Tout le monde utilise la même convention de fléchage : **flèche de $U$ orientée de la borne $-$ vers la borne $+$** (générateur) ou **flèche de $U$ orientée de l'entrée du courant vers la sortie** (résistance en convention récepteur).
 
+**Vue schématique d'une boucle simple** (générateur + deux résistances en série) :
+
+\`\`\`mermaid
+graph LR
+  E["Générateur E"] -->|"I →"| R1["Résistance R1"]
+  R1 -->|"I →"| R2["Résistance R2"]
+  R2 -->|"I →"| E
+\`\`\`
+
+Le courant $I$ circule **dans le même sens** partout dans la boucle (KCL trivial, un seul courant). La KVL sur ce tour complet donne $E = R_1 I + R_2 I$.
+
 ## Méthode de résolution (à appliquer mécaniquement)
 
 1. **Dessiner** le schéma, orienter toutes les flèches (tensions et courants). Nommer les courants qu'on cherche ($I_1$, $I_2$, ...).

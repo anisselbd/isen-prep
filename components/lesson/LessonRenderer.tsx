@@ -3,6 +3,7 @@ import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import rehypeRaw from "rehype-raw";
 import { ExampleBox } from "./ExampleBox";
+import { MermaidBlock } from "./MermaidBlock";
 
 // Lesson markdown conventions:
 //   - Inline math  : $...$
@@ -32,6 +33,10 @@ const components: Components = {
   code: ({ children, className }) => {
     const isBlock = (className ?? "").startsWith("language-");
     if (isBlock) {
+      if (className === "language-mermaid") {
+        const code = Array.isArray(children) ? children.join("") : String(children ?? "");
+        return <MermaidBlock code={code} />;
+      }
       return (
         <pre className="my-4 overflow-x-auto rounded-md bg-muted p-3 font-mono text-xs">
           <code>{children}</code>

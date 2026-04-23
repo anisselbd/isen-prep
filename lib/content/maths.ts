@@ -1078,6 +1078,23 @@ C'est la version à utiliser à 95% du temps.
 >
 > **Morale** : un test même très fiable **n'est utile que si on a une raison de suspecter la maladie avant le test**. C'est pour ça que les dépistages massifs sur population saine sont souvent contre-productifs.
 
+**Arbre de probabilités** correspondant (10 000 personnes) :
+
+\`\`\`mermaid
+graph LR
+  A[10 000 personnes] -->|1% malades| M[100 malades]
+  A -->|99% sains| S[9 900 sains]
+  M -->|sensibilité 99%| MP[99 positifs]
+  M -->|1% faux négatifs| MN[1 négatif]
+  S -->|5% faux positifs| SP[495 positifs]
+  S -->|spécificité 95%| SN[9 405 négatifs]
+  MP --> T[594 positifs au total]
+  SP --> T
+  T -->|99 vraiment malades sur 594| R[≈ 17% de vrais positifs]
+\`\`\`
+
+On voit visuellement pourquoi la plupart des positifs sont en fait des **faux positifs** (495 contre 99) : la branche "sains" est tellement plus grande que même un petit taux d'erreur produit plus de faux positifs que de vrais positifs.
+
 > [!warning]
 > **Pièges classiques — Bayes est le chapitre où on se plante le plus.**
 >

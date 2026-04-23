@@ -312,6 +312,26 @@ On cherche le **minimum** du tableau, on l'**échange** avec l'élément en posi
 
 **Diviser pour régner**, mais différent. On **coupe** le tableau en deux moitiés, on les trie **récursivement**, puis on **fusionne** les deux moitiés triées en parcourant chacune en parallèle.
 
+Voici l'arbre de division sur \`[8, 3, 5, 1, 7, 2, 6, 4]\` (on découpe jusqu'à des éléments seuls, puis on fusionne en remontant) :
+
+\`\`\`mermaid
+graph TD
+  A["[8,3,5,1,7,2,6,4]"] --> B["[8,3,5,1]"]
+  A --> C["[7,2,6,4]"]
+  B --> D["[8,3]"]
+  B --> E["[5,1]"]
+  C --> F["[7,2]"]
+  C --> G["[6,4]"]
+  D --> H["[8]"]
+  D --> I["[3]"]
+  E --> J["[5]"]
+  E --> K["[1]"]
+  F --> L["[7]"]
+  F --> M["[2]"]
+  G --> N["[6]"]
+  G --> O["[4]"]
+\`\`\`
+
 **La fusion est $O(n)$** (parcours linéaire des deux moitiés). L'arbre récursif a $\\log n$ niveaux, chaque niveau coûte $O(n)$ total → $O(n \\log n)$ dans tous les cas (pas de pire cas en $O(n^2)$).
 
 **Inconvénient** : nécessite un **buffer de taille $n$** pour la fusion → coût mémoire $O(n)$, pas in-place.
@@ -495,6 +515,17 @@ function factorial(n) {
 - Retour vers \`factorial(3)\` : $3 \\times 2 = 6$. ✓
 
 La fonction "**déploie**" ses appels jusqu'au cas de base, puis "**replie**" en combinant les résultats.
+
+Visualisé comme un arbre d'appels :
+
+\`\`\`mermaid
+graph TD
+  A["factorial(3)"] --> B["factorial(2)"]
+  B --> C["factorial(1) = 1"]
+  C -. retour 1 .-> B
+  B -. retour 2·1 = 2 .-> A
+  A -. retour 3·2 = 6 .-> R["résultat 6"]
+\`\`\`
 
 ## La pile d'appels
 
@@ -818,6 +849,21 @@ Un graphe = nœuds + arêtes. Deux algos fondamentaux :
 - Propagation (ex : "trouve toutes les pages à 2 clics").
 
 Complexité des deux : $O(V + E)$ ($V$ = nb de sommets, $E$ = nb d'arêtes).
+
+Exemple de graphe à parcourir (ordres d'exploration différents selon l'algo) :
+
+\`\`\`mermaid
+graph TD
+  A((A)) --> B((B))
+  A --> C((C))
+  B --> D((D))
+  B --> E((E))
+  C --> F((F))
+  C --> G((G))
+\`\`\`
+
+- **BFS** depuis A : A, **B, C**, **D, E, F, G**. On épuise tout le niveau 1 avant d'aller au niveau 2.
+- **DFS** depuis A : A, B, D, E, C, F, G. On plonge à fond dans la première branche avant de remonter.
 
 > [!example]
 > **Quatre applications typiques.**
