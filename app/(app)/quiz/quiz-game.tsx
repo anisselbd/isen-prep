@@ -35,7 +35,6 @@ type AnswerRecord = {
 };
 
 const QUESTION_TIME_MS = 15_000;
-const FEEDBACK_MS = 1_400;
 const MAX_LIVES = 3;
 const BEST_SCORE_KEY = "isen-prep:quiz-best";
 
@@ -150,26 +149,29 @@ export function QuizGame({ questions }: { questions: QuizQuestion[] }) {
       ]);
       setPhase("feedback");
 
-      window.setTimeout(() => {
-        if (newLives <= 0 || currentIndex + 1 >= order.length) {
-          setPhase("result");
-          if (newScore > bestScore) {
-            setBestScore(newScore);
-            try {
-              window.localStorage.setItem(BEST_SCORE_KEY, String(newScore));
-            } catch {}
-          }
-        } else {
-          setCurrentIndex((i) => i + 1);
-          setTimeLeftMs(QUESTION_TIME_MS);
-          setSelectedChoice(null);
-          setLastAnswerCorrect(null);
-          setPhase("playing");
-        }
-      }, FEEDBACK_MS);
+      // Persist best score eagerly so the result screen shows it correctly
+      // whichever exit path the player takes.
+      if (newScore > bestScore) {
+        setBestScore(newScore);
+        try {
+          window.localStorage.setItem(BEST_SCORE_KEY, String(newScore));
+        } catch {}
+      }
     },
-    [bestScore, combo, currentIndex, currentQuestion, lives, maxCombo, order.length, score, timeLeftMs],
+    [bestScore, combo, currentQuestion, lives, maxCombo, score, timeLeftMs],
   );
+
+  const advanceToNext = useCallback(() => {
+    if (lives <= 0 || currentIndex + 1 >= order.length) {
+      setPhase("result");
+    } else {
+      setCurrentIndex((i) => i + 1);
+      setTimeLeftMs(QUESTION_TIME_MS);
+      setSelectedChoice(null);
+      setLastAnswerCorrect(null);
+      setPhase("playing");
+    }
+  }, [currentIndex, lives, order.length]);
 
   // Time runs out during a question.
   useEffect(() => {
@@ -354,6 +356,17 @@ export function QuizGame({ questions }: { questions: QuizQuestion[] }) {
             </div>
           ) : null}
         </div>
+      ) : null}
+
+      {phase === "feedback" ? (
+        <Button onClick={advanceToNext} size="lg" className="self-end" autoFocus>
+          {lives <= 0 || currentIndex + 1 >= order.length
+            ? "Voir les résultats"
+            : "Question suivante"}
+          <span className="ml-2 rounded border border-current/30 px-1.5 py-0.5 font-mono text-[10px] opacity-70">
+            Entrée
+          </span>
+        </Button>
       ) : null}
     </div>
   );
