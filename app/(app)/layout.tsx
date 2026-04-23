@@ -21,17 +21,20 @@ export default async function AppLayout({
     .eq("id", user.id)
     .maybeSingle();
 
+  const showDev = process.env.NODE_ENV === "development";
+
   return (
-    <div className="grid min-h-dvh grid-cols-[240px_1fr]">
-      <aside className="row-span-2">
-        <Sidebar showDev={process.env.NODE_ENV === "development"} />
+    <div className="grid min-h-dvh grid-cols-1 md:grid-cols-[240px_1fr]">
+      <aside className="row-span-2 hidden md:block">
+        <Sidebar showDev={showDev} />
       </aside>
       <div className="flex min-w-0 flex-col">
         <Topbar
           email={user.email ?? ""}
           displayName={profile?.display_name ?? null}
+          showDev={showDev}
         />
-        <main className="flex-1 overflow-auto p-6">{children}</main>
+        <main className="flex-1 overflow-auto p-4 md:p-6">{children}</main>
       </div>
     </div>
   );
