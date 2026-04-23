@@ -32,13 +32,19 @@ export type QuizQuestion = {
   topic_id: string;
   topic_name: string;
   subject_id: string;
+  difficulty: number;
   question_md: string;
   choices: string[];
   correct_index: number;
   explanation_md: string;
 };
 
+export type QuizSubject = { id: string; name: string };
+
 type Phase = "intro" | "playing" | "feedback" | "result";
+
+type SubjectFilter = "all" | string; // "all" or subject id
+type DifficultyFilter = "all" | "easy" | "medium" | "hard";
 
 type AnswerRecord = {
   question: QuizQuestion;
@@ -63,6 +69,28 @@ function shuffle<T>(arr: T[]): T[] {
   return out;
 }
 
+/**
+ * Shuffle weighted (higher weight → more likely to be picked earlier).
+ * Items with weight 0 are still included at the end.
+ */
+function weightedShuffle<T>(items: T[], weightOf: (item: T) => number): T[] {
+  const pool = items.slice();
+  const out: T[] = [];
+  while (pool.length > 0) {
+    const weights = pool.map((it) => Math.max(0.0001, weightOf(it)));
+    const total = weights.reduce((a, b) => a + b, 0);
+    let r = Math.random() * total;
+    let idx = 0;
+    for (; idx < pool.length - 1; idx++) {
+      r -= weights[idx]!;
+      if (r <= 0) break;
+    }
+    out.push(pool[idx]!);
+    pool.splice(idx, 1);
+  }
+  return out;
+}
+
 function comboMultiplier(combo: number): number {
   if (combo >= 10) return 3;
   if (combo >= 5) return 2;
@@ -70,7 +98,21 @@ function comboMultiplier(combo: number): number {
   return 1;
 }
 
-export function QuizGame({ questions }: { questions: QuizQuestion[] }) {
+function matchesDifficulty(q: QuizQuestion, f: DifficultyFilter): boolean {
+  if (f === "all") return true;
+  if (f === "easy") return q.difficulty <= 2;
+  if (f === "medium") return q.difficulty === 3;
+  if (f === "hard") return q.difficulty >= 4;
+  return true;
+}
+
+type QuizGameProps = {
+  questions: QuizQuestion[];
+  subjects: QuizSubject[];
+  masteryByTopic: Record<string, number>;
+};
+
+export function QuizGame({ questions, subjects, masteryByTopic }: QuizGameProps) {
   const [phase, setPhase] = useState<Phase>("intro");
   const [order, setOrder] = useState<QuizQuestion[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -85,6 +127,9 @@ export function QuizGame({ questions }: { questions: QuizQuestion[] }) {
   );
   const [selectedChoice, setSelectedChoice] = useState<number | null>(null);
   const [bestScore, setBestScore] = useState(0);
+  const [subjectFilter, setSubjectFilter] = useState<SubjectFilter>("all");
+  const [difficultyFilter, setDifficultyFilter] = useState<DifficultyFilter>("all");
+  const [weightedByWeakness, setWeightedByWeakness] = useState(false);
   const startTimeRef = useRef<number>(0);
 
   useEffect(() => {
@@ -92,8 +137,28 @@ export function QuizGame({ questions }: { questions: QuizQuestion[] }) {
     if (stored) setBestScore(Number(stored) || 0);
   }, []);
 
+  const filteredQuestions = useMemo(
+    () =>
+      questions.filter(
+        (q) =>
+          (subjectFilter === "all" || q.subject_id === subjectFilter) &&
+          matchesDifficulty(q, difficultyFilter),
+      ),
+    [questions, subjectFilter, difficultyFilter],
+  );
+
   const startGame = useCallback(() => {
-    setOrder(shuffle(questions));
+    const pool = filteredQuestions;
+    if (pool.length === 0) return;
+    const ordered = weightedByWeakness
+      ? weightedShuffle(pool, (q) => {
+          const m = masteryByTopic[q.topic_id] ?? 0;
+          // low mastery → higher weight. Add a small floor so unseen topics
+          // (mastery 0) don't dominate completely.
+          return 1 - m + 0.2;
+        })
+      : shuffle(pool);
+    setOrder(ordered);
     setCurrentIndex(0);
     setScore(0);
     setCombo(0);
@@ -105,7 +170,7 @@ export function QuizGame({ questions }: { questions: QuizQuestion[] }) {
     setSelectedChoice(null);
     setPhase("playing");
     startTimeRef.current = Date.now();
-  }, [questions]);
+  }, [filteredQuestions, masteryByTopic, weightedByWeakness]);
 
   // Game timer.
   useEffect(() => {
@@ -212,7 +277,15 @@ export function QuizGame({ questions }: { questions: QuizQuestion[] }) {
     return (
       <QuizIntro
         bestScore={bestScore}
-        questionCount={questions.length}
+        questionCount={filteredQuestions.length}
+        subjects={subjects}
+        subjectFilter={subjectFilter}
+        setSubjectFilter={setSubjectFilter}
+        difficultyFilter={difficultyFilter}
+        setDifficultyFilter={setDifficultyFilter}
+        weightedByWeakness={weightedByWeakness}
+        setWeightedByWeakness={setWeightedByWeakness}
+        hasMastery={Object.keys(masteryByTopic).length > 0}
         onStart={startGame}
       />
     );
@@ -400,15 +473,59 @@ export function QuizGame({ questions }: { questions: QuizQuestion[] }) {
   );
 }
 
+type QuizIntroProps = {
+  bestScore: number;
+  questionCount: number;
+  subjects: QuizSubject[];
+  subjectFilter: SubjectFilter;
+  setSubjectFilter: (s: SubjectFilter) => void;
+  difficultyFilter: DifficultyFilter;
+  setDifficultyFilter: (d: DifficultyFilter) => void;
+  weightedByWeakness: boolean;
+  setWeightedByWeakness: (b: boolean) => void;
+  hasMastery: boolean;
+  onStart: () => void;
+};
+
+function FilterChip({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "rounded-full border px-3 py-1 text-xs transition-colors",
+        active
+          ? "border-primary bg-primary text-primary-foreground"
+          : "border-border bg-card text-muted-foreground hover:border-primary/40 hover:text-foreground",
+      )}
+    >
+      {children}
+    </button>
+  );
+}
+
 function QuizIntro({
   bestScore,
   questionCount,
+  subjects,
+  subjectFilter,
+  setSubjectFilter,
+  difficultyFilter,
+  setDifficultyFilter,
+  weightedByWeakness,
+  setWeightedByWeakness,
+  hasMastery,
   onStart,
-}: {
-  bestScore: number;
-  questionCount: number;
-  onStart: () => void;
-}) {
+}: QuizIntroProps) {
+  const canStart = questionCount > 0;
   return (
     <div className="mx-auto flex max-w-2xl flex-col gap-6">
       <header>
@@ -420,42 +537,130 @@ function QuizIntro({
 
       <Card>
         <CardHeader>
+          <CardTitle>Paramètres</CardTitle>
+          <CardDescription>
+            Filtre le pool avant de lancer. Tes réponses comptent pour ton
+            mastery (comme en pratique adaptative).
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-4 text-sm">
+          <div>
+            <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Matière
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <FilterChip
+                active={subjectFilter === "all"}
+                onClick={() => setSubjectFilter("all")}
+              >
+                Toutes
+              </FilterChip>
+              {subjects.map((s) => (
+                <FilterChip
+                  key={s.id}
+                  active={subjectFilter === s.id}
+                  onClick={() => setSubjectFilter(s.id)}
+                >
+                  {s.name}
+                </FilterChip>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Difficulté
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <FilterChip
+                active={difficultyFilter === "all"}
+                onClick={() => setDifficultyFilter("all")}
+              >
+                Toutes
+              </FilterChip>
+              <FilterChip
+                active={difficultyFilter === "easy"}
+                onClick={() => setDifficultyFilter("easy")}
+              >
+                Facile (1-2)
+              </FilterChip>
+              <FilterChip
+                active={difficultyFilter === "medium"}
+                onClick={() => setDifficultyFilter("medium")}
+              >
+                Moyen (3)
+              </FilterChip>
+              <FilterChip
+                active={difficultyFilter === "hard"}
+                onClick={() => setDifficultyFilter("hard")}
+              >
+                Difficile (4-5)
+              </FilterChip>
+            </div>
+          </div>
+
+          {hasMastery ? (
+            <label className="flex cursor-pointer items-start gap-3 rounded-md border bg-muted/20 px-3 py-2.5">
+              <input
+                type="checkbox"
+                checked={weightedByWeakness}
+                onChange={(e) => setWeightedByWeakness(e.target.checked)}
+                className="mt-0.5 size-4 accent-primary"
+              />
+              <div className="flex-1">
+                <div className="font-medium">Prioriser mes points faibles</div>
+                <div className="text-xs text-muted-foreground">
+                  Tire plus souvent les questions des topics où ton mastery est bas.
+                </div>
+              </div>
+            </label>
+          ) : null}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
           <CardTitle>Règles</CardTitle>
-          <CardDescription>Tu as 15 secondes par question.</CardDescription>
+          <CardDescription>15 secondes par question.</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-2 text-sm">
           <ul className="list-disc pl-5 [&>li]:mb-1">
             <li>
-              <strong>+10 points</strong> par bonne réponse, × multiplicateur
-              combo (×1,5 à 3 consécutives, ×2 à 5, ×3 à 10).
+              <strong>+10 pts</strong> × multiplicateur combo (×1,5 à 3, ×2 à 5,
+              ×3 à 10 consécutives).
             </li>
             <li>
               <strong>Bonus temps</strong> : 0,5 pt par seconde restante.
             </li>
             <li>
-              <strong>Mauvaise réponse ou temps écoulé</strong> : -1 vie, combo
-              remis à zéro.
+              <strong>Erreur ou timeout</strong> : -1 vie, combo remis à zéro.
             </li>
             <li>
-              <strong>Fin de partie</strong> : 0 vie OU toutes les questions
-              jouées.
+              <strong>Fin</strong> : 0 vie OU toutes les questions jouées.
             </li>
           </ul>
           <div className="mt-4 flex items-center justify-between rounded-md border bg-muted/30 px-3 py-2 text-xs">
             <span className="text-muted-foreground">
-              {questionCount} questions dans le pool
+              {questionCount} question{questionCount > 1 ? "s" : ""} dans ce pool
             </span>
             <span className="flex items-center gap-1 font-mono">
               <Trophy className="size-3.5 text-amber-500" aria-hidden="true" />
-              Meilleur score : <strong>{bestScore}</strong>
+              Record : <strong>{bestScore}</strong>
             </span>
           </div>
         </CardContent>
       </Card>
 
-      <Button onClick={onStart} size="lg" className="self-start">
+      <Button
+        onClick={onStart}
+        size="lg"
+        className="self-start"
+        disabled={!canStart}
+      >
         <Play className="size-4" />
-        Lancer le quiz
+        {canStart
+          ? "Lancer le quiz"
+          : "Aucune question dans ce filtre"}
       </Button>
     </div>
   );
