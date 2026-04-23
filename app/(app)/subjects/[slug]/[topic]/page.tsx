@@ -5,6 +5,7 @@ import { BookOpen, Brain, Dumbbell } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { NotesCard } from "@/components/notes/notes-card";
 import { selectDueFlashcardIds } from "@/lib/flashcards/due";
 
 export async function generateMetadata({
@@ -35,6 +36,7 @@ export default async function TopicHubPage({
     { data: exercisesCount },
     { data: flashcards },
     { data: states },
+    { data: note },
   ] = await Promise.all([
     supabase
       .from("topics")
@@ -55,6 +57,12 @@ export default async function TopicHubPage({
       .from("review_states")
       .select("flashcard_id, next_review_at")
       .eq("user_id", user?.id ?? ""),
+    supabase
+      .from("user_notes")
+      .select("content_md, updated_at")
+      .eq("user_id", user?.id ?? "")
+      .eq("topic_id", topicId)
+      .maybeSingle(),
   ]);
 
   if (!topic || !subject) notFound();
@@ -114,6 +122,13 @@ export default async function TopicHubPage({
           disabled={numFlashcards === 0}
         />
       </section>
+
+      <NotesCard
+        topicId={topicId}
+        slug={slug}
+        initialContent={note?.content_md ?? ""}
+        initialUpdatedAt={note?.updated_at ?? null}
+      />
     </div>
   );
 }

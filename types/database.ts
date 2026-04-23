@@ -203,6 +203,22 @@ export interface Database {
         Update: Partial<Database["public"]["Tables"]["review_states"]["Insert"]>;
         Relationships: [];
       };
+      user_notes: {
+        Row: {
+          user_id: string;
+          topic_id: string;
+          content_md: string;
+          updated_at: string;
+        };
+        Insert: {
+          user_id: string;
+          topic_id: string;
+          content_md?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["user_notes"]["Insert"]>;
+        Relationships: [];
+      };
       interview_sessions: {
         Row: {
           id: string;
