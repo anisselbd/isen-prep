@@ -46,6 +46,67 @@ type Phase = "intro" | "playing" | "feedback" | "result";
 type SubjectFilter = "all" | string; // "all" or subject id
 type DifficultyFilter = "all" | "easy" | "medium" | "hard";
 
+type GameMode = "classic" | "sprint" | "survival" | "perfection" | "flash";
+
+type ModeConfig = {
+  key: GameMode;
+  name: string;
+  description: string;
+  questionTimeMs: number;
+  maxLives: number;
+  /** null = play until pool exhausted (or lives gone). */
+  questionCount: number | null;
+  scoreMultiplier: number;
+};
+
+const MODE_CONFIG: Record<GameMode, ModeConfig> = {
+  classic: {
+    key: "classic",
+    name: "Classique",
+    description: "15 s/question · 3 vies · toutes les questions",
+    questionTimeMs: 15_000,
+    maxLives: 3,
+    questionCount: null,
+    scoreMultiplier: 1,
+  },
+  sprint: {
+    key: "sprint",
+    name: "Sprint",
+    description: "20 questions · 3 vies · 15 s/question",
+    questionTimeMs: 15_000,
+    maxLives: 3,
+    questionCount: 20,
+    scoreMultiplier: 1,
+  },
+  survival: {
+    key: "survival",
+    name: "Survival",
+    description: "Infini tant que tu as une vie",
+    questionTimeMs: 15_000,
+    maxLives: 3,
+    questionCount: null,
+    scoreMultiplier: 1,
+  },
+  perfection: {
+    key: "perfection",
+    name: "Perfection",
+    description: "1 seule erreur autorisée",
+    questionTimeMs: 15_000,
+    maxLives: 1,
+    questionCount: null,
+    scoreMultiplier: 1.5,
+  },
+  flash: {
+    key: "flash",
+    name: "Flash",
+    description: "5 s/question · score ×2",
+    questionTimeMs: 5_000,
+    maxLives: 3,
+    questionCount: null,
+    scoreMultiplier: 2,
+  },
+};
+
 type AnswerRecord = {
   question: QuizQuestion;
   correct: boolean;
@@ -53,8 +114,6 @@ type AnswerRecord = {
   picked_index: number | null;
 };
 
-const QUESTION_TIME_MS = 15_000;
-const MAX_LIVES = 3;
 const BEST_SCORE_KEY = "isen-prep:quiz-best";
 
 // Shuffle a copy of the array (Fisher-Yates).
@@ -114,13 +173,15 @@ type QuizGameProps = {
 
 export function QuizGame({ questions, subjects, masteryByTopic }: QuizGameProps) {
   const [phase, setPhase] = useState<Phase>("intro");
+  const [mode, setMode] = useState<GameMode>("classic");
   const [order, setOrder] = useState<QuizQuestion[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [score, setScore] = useState(0);
   const [combo, setCombo] = useState(0);
   const [maxCombo, setMaxCombo] = useState(0);
-  const [lives, setLives] = useState(MAX_LIVES);
-  const [timeLeftMs, setTimeLeftMs] = useState(QUESTION_TIME_MS);
+  const modeCfg = MODE_CONFIG[mode];
+  const [lives, setLives] = useState(modeCfg.maxLives);
+  const [timeLeftMs, setTimeLeftMs] = useState(modeCfg.questionTimeMs);
   const [answers, setAnswers] = useState<AnswerRecord[]>([]);
   const [lastAnswerCorrect, setLastAnswerCorrect] = useState<boolean | null>(
     null,
@@ -150,27 +211,37 @@ export function QuizGame({ questions, subjects, masteryByTopic }: QuizGameProps)
   const startGame = useCallback(() => {
     const pool = filteredQuestions;
     if (pool.length === 0) return;
-    const ordered = weightedByWeakness
+    let ordered = weightedByWeakness
       ? weightedShuffle(pool, (q) => {
           const m = masteryByTopic[q.topic_id] ?? 0;
-          // low mastery → higher weight. Add a small floor so unseen topics
-          // (mastery 0) don't dominate completely.
           return 1 - m + 0.2;
         })
       : shuffle(pool);
+    if (modeCfg.questionCount !== null) {
+      ordered = ordered.slice(0, modeCfg.questionCount);
+    }
+    if (mode === "survival") {
+      // Survival loops through the pool many times; the game ends only on
+      // 0 lives. Repeat the shuffled order enough times to cover a very long
+      // streak (300 questions ≈ always enough in practice).
+      const loops = Math.max(1, Math.ceil(300 / ordered.length));
+      const repeated: QuizQuestion[] = [];
+      for (let i = 0; i < loops; i++) repeated.push(...shuffle(ordered));
+      ordered = repeated;
+    }
     setOrder(ordered);
     setCurrentIndex(0);
     setScore(0);
     setCombo(0);
     setMaxCombo(0);
-    setLives(MAX_LIVES);
-    setTimeLeftMs(QUESTION_TIME_MS);
+    setLives(modeCfg.maxLives);
+    setTimeLeftMs(modeCfg.questionTimeMs);
     setAnswers([]);
     setLastAnswerCorrect(null);
     setSelectedChoice(null);
     setPhase("playing");
     startTimeRef.current = Date.now();
-  }, [filteredQuestions, masteryByTopic, weightedByWeakness]);
+  }, [filteredQuestions, masteryByTopic, mode, modeCfg.maxLives, modeCfg.questionCount, modeCfg.questionTimeMs, weightedByWeakness]);
 
   // Game timer.
   useEffect(() => {
@@ -195,7 +266,7 @@ export function QuizGame({ questions, subjects, masteryByTopic }: QuizGameProps)
       if (!currentQuestion) return;
       const timeUsed = Math.max(
         0,
-        QUESTION_TIME_MS - timeLeftMs,
+        modeCfg.questionTimeMs - timeLeftMs,
       );
 
       let newLives = lives;
@@ -209,7 +280,8 @@ export function QuizGame({ questions, subjects, masteryByTopic }: QuizGameProps)
         const mult = comboMultiplier(newCombo);
         const base = 10;
         const timeBonus = Math.round((timeLeftMs / 1000) * 0.5);
-        newScore = score + Math.round(base * mult) + timeBonus;
+        const rawPoints = base * mult + timeBonus;
+        newScore = score + Math.round(rawPoints * modeCfg.scoreMultiplier);
       } else {
         newLives = lives - 1;
         newCombo = 0;
@@ -259,12 +331,12 @@ export function QuizGame({ questions, subjects, masteryByTopic }: QuizGameProps)
       setPhase("result");
     } else {
       setCurrentIndex((i) => i + 1);
-      setTimeLeftMs(QUESTION_TIME_MS);
+      setTimeLeftMs(modeCfg.questionTimeMs);
       setSelectedChoice(null);
       setLastAnswerCorrect(null);
       setPhase("playing");
     }
-  }, [currentIndex, lives, order.length]);
+  }, [currentIndex, lives, modeCfg.questionTimeMs, order.length]);
 
   // Time runs out during a question.
   useEffect(() => {
@@ -286,6 +358,8 @@ export function QuizGame({ questions, subjects, masteryByTopic }: QuizGameProps)
         weightedByWeakness={weightedByWeakness}
         setWeightedByWeakness={setWeightedByWeakness}
         hasMastery={Object.keys(masteryByTopic).length > 0}
+        mode={mode}
+        setMode={setMode}
         onStart={startGame}
       />
     );
@@ -307,7 +381,7 @@ export function QuizGame({ questions, subjects, masteryByTopic }: QuizGameProps)
 
   if (!currentQuestion) return null;
 
-  const progressPct = (timeLeftMs / QUESTION_TIME_MS) * 100;
+  const progressPct = (timeLeftMs / modeCfg.questionTimeMs) * 100;
   const timeLow = timeLeftMs <= 5000;
   const mult = comboMultiplier(combo);
 
@@ -338,7 +412,7 @@ export function QuizGame({ questions, subjects, masteryByTopic }: QuizGameProps)
             </span>
           ) : null}
           <span className="flex items-center gap-0.5">
-            {Array.from({ length: MAX_LIVES }).map((_, i) => (
+            {Array.from({ length: modeCfg.maxLives }).map((_, i) => (
               <Heart
                 key={i}
                 className={cn(
@@ -484,6 +558,8 @@ type QuizIntroProps = {
   weightedByWeakness: boolean;
   setWeightedByWeakness: (b: boolean) => void;
   hasMastery: boolean;
+  mode: GameMode;
+  setMode: (m: GameMode) => void;
   onStart: () => void;
 };
 
@@ -523,9 +599,12 @@ function QuizIntro({
   weightedByWeakness,
   setWeightedByWeakness,
   hasMastery,
+  mode,
+  setMode,
   onStart,
 }: QuizIntroProps) {
   const canStart = questionCount > 0;
+  const modeCfg = MODE_CONFIG[mode];
   return (
     <div className="mx-auto flex max-w-2xl flex-col gap-6">
       <header>
@@ -539,11 +618,33 @@ function QuizIntro({
         <CardHeader>
           <CardTitle>Paramètres</CardTitle>
           <CardDescription>
-            Filtre le pool avant de lancer. Tes réponses comptent pour ton
-            mastery (comme en pratique adaptative).
+            Filtre le pool, choisis un mode, lance. Tes réponses comptent pour
+            ton mastery (comme en pratique adaptative).
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-4 text-sm">
+          <div>
+            <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Mode de jeu
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {(["classic", "sprint", "survival", "perfection", "flash"] as GameMode[]).map(
+                (m) => (
+                  <FilterChip
+                    key={m}
+                    active={mode === m}
+                    onClick={() => setMode(m)}
+                  >
+                    {MODE_CONFIG[m].name}
+                  </FilterChip>
+                ),
+              )}
+            </div>
+            <p className="mt-1.5 text-xs text-muted-foreground">
+              {modeCfg.description}
+            </p>
+          </div>
+
           <div>
             <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               Matière
