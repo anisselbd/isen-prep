@@ -1,6 +1,7 @@
 import { LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { MobileNav } from "@/components/app-shell/mobile-nav";
+import { SearchButton } from "@/components/command-palette/search-button";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { signOut } from "@/app/(app)/actions";
 
@@ -27,6 +28,7 @@ export function Topbar({ email, displayName, showDev }: TopbarProps) {
         </div>
       </div>
       <div className="flex shrink-0 items-center gap-1">
+        <SearchButton />
         <ThemeToggle />
         <form action={signOut}>
           <Button type="submit" variant="ghost" size="sm">

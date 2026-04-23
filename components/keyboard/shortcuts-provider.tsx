@@ -74,9 +74,13 @@ export function ShortcutsProvider() {
       }
     };
 
+    const openPalette = () => setPaletteOpen(true);
+
     window.addEventListener("keydown", handler);
+    window.addEventListener("isen:open-palette", openPalette);
     return () => {
       window.removeEventListener("keydown", handler);
+      window.removeEventListener("isen:open-palette", openPalette);
       if (leaderTimer) clearTimeout(leaderTimer);
     };
   }, [router]);
