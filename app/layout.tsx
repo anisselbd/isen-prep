@@ -87,8 +87,11 @@ export default function RootLayout({
         <link rel="apple-touch-startup-image" href="/splash/iphone-xs-11pro-dark.png"   media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait) and (prefers-color-scheme: dark)" />
         <link rel="apple-touch-startup-image" href="/splash/iphone-xr-11-dark.png"      media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait) and (prefers-color-scheme: dark)" />
         <link rel="apple-touch-startup-image" href="/splash/iphone-se-8-dark.png"       media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait) and (prefers-color-scheme: dark)" />
-        {/* Fallback for any other device/orientation. */}
-        <link rel="apple-touch-startup-image" href="/splash/iphone-14-pro-max-light.png" />
+        {/* Fallback (no media) — iOS picks this one when nothing else matches.
+            Using the dark variant because older iOS versions don't honor
+            `prefers-color-scheme` inside splash media queries, and our app's
+            brand leans dark. */}
+        <link rel="apple-touch-startup-image" href="/splash/iphone-14-pro-max-dark.png" />
       </head>
       <body className="min-h-full flex flex-col font-sans">
         <ThemeProvider
