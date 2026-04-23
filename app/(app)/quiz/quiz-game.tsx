@@ -1,15 +1,18 @@
 "use client";
 
 import {
+  Award,
   BookOpen,
   ChevronDown,
   Flame,
   Heart,
+  Lock,
   Pause,
   Play,
   RotateCcw,
   SkipForward,
   Snowflake,
+  Sparkles,
   Split,
   Timer,
   Trophy,
@@ -30,6 +33,11 @@ import {
 } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { recordQuizAttempt } from "./actions";
+import {
+  ACHIEVEMENTS,
+  reconcileAchievements,
+  type GameStats,
+} from "./achievements";
 
 export type QuizQuestion = {
   id: string;
@@ -443,6 +451,28 @@ export function QuizGame({ questions, subjects, masteryByTopic }: QuizGameProps)
   }
 
   if (phase === "result") {
+    const correctCount = answers.filter((a) => a.correct).length;
+    const wrongCount = answers.length - correctCount;
+    const fastAnswerCount = answers.filter(
+      (a) => a.correct && a.time_used_ms < 3000,
+    ).length;
+    const powerUpsUsed =
+      INITIAL_POWER_UPS.fifty_fifty -
+      powerUps.fifty_fifty +
+      INITIAL_POWER_UPS.freeze -
+      powerUps.freeze +
+      INITIAL_POWER_UPS.skip -
+      powerUps.skip;
+    const gameStats: GameStats = {
+      final_score: score,
+      total_answers: answers.length,
+      correct_count: correctCount,
+      wrong_count: wrongCount,
+      max_combo: maxCombo,
+      fast_answer_count: fastAnswerCount,
+      power_ups_used: powerUpsUsed,
+      mode_key: mode,
+    };
     return (
       <QuizResult
         score={score}
@@ -451,6 +481,7 @@ export function QuizGame({ questions, subjects, masteryByTopic }: QuizGameProps)
         answers={answers}
         totalQuestions={order.length}
         lives={lives}
+        gameStats={gameStats}
         onRestart={startGame}
       />
     );
@@ -1026,6 +1057,7 @@ function QuizResult({
   answers,
   totalQuestions,
   lives,
+  gameStats,
   onRestart,
 }: {
   score: number;
@@ -1034,8 +1066,11 @@ function QuizResult({
   answers: AnswerRecord[];
   totalQuestions: number;
   lives: number;
+  gameStats: GameStats;
   onRestart: () => void;
 }) {
+  // Reconcile achievements once on mount (result screen).
+  const [achievementsState] = useState(() => reconcileAchievements(gameStats));
   const correctCount = answers.filter((a) => a.correct).length;
   const accuracy =
     answers.length === 0
@@ -1128,6 +1163,81 @@ function QuizResult({
               </ul>
             </div>
           ) : null}
+        </CardContent>
+      </Card>
+
+      {achievementsState.newly.length > 0 ? (
+        <Card className="border-amber-400/60 bg-amber-500/5">
+          <CardHeader className="flex flex-row items-center gap-2 space-y-0">
+            <Sparkles className="size-4 text-amber-500" />
+            <div>
+              <CardTitle className="text-base">
+                {achievementsState.newly.length === 1
+                  ? "Nouveau succès débloqué !"
+                  : `${achievementsState.newly.length} nouveaux succès !`}
+              </CardTitle>
+              <CardDescription>Tu progresses.</CardDescription>
+            </div>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-2">
+            {achievementsState.newly.map((id) => {
+              const a = ACHIEVEMENTS.find((x) => x.id === id);
+              if (!a) return null;
+              return (
+                <div
+                  key={id}
+                  className="flex items-start gap-3 rounded-md border border-amber-400/40 bg-card px-3 py-2"
+                >
+                  <Award className="mt-0.5 size-5 shrink-0 text-amber-500" />
+                  <div>
+                    <div className="font-medium">{a.name}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {a.description}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </CardContent>
+        </Card>
+      ) : null}
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Succès</CardTitle>
+          <CardDescription>
+            {achievementsState.all.size} / {ACHIEVEMENTS.length} débloqués.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+          {ACHIEVEMENTS.map((a) => {
+            const unlocked = achievementsState.all.has(a.id);
+            return (
+              <div
+                key={a.id}
+                className={cn(
+                  "flex items-start gap-3 rounded-md border px-3 py-2 text-sm",
+                  unlocked
+                    ? "border-amber-400/40 bg-amber-500/5"
+                    : "bg-muted/20",
+                )}
+              >
+                {unlocked ? (
+                  <Award className="mt-0.5 size-4 shrink-0 text-amber-500" />
+                ) : (
+                  <Lock className="mt-0.5 size-4 shrink-0 text-muted-foreground/60" />
+                )}
+                <div>
+                  <div className={cn("font-medium", !unlocked && "text-muted-foreground")}>
+                    {a.name}
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {a.description}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
         </CardContent>
       </Card>
 
