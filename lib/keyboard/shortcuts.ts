@@ -1,9 +1,9 @@
 export type Shortcut = {
-  chord: string;
+  chord: "nav" | "single" | "modifier";
   keys: string[];
   label: string;
   href?: string;
-  action?: "help";
+  action?: "help" | "search";
 };
 
 export const SHORTCUTS: Shortcut[] = [
@@ -13,6 +13,7 @@ export const SHORTCUTS: Shortcut[] = [
   { chord: "nav", keys: ["g", "i"], label: "Entretien", href: "/interview" },
   { chord: "nav", keys: ["g", "r"], label: "Révision ciblée", href: "/review" },
   { chord: "nav", keys: ["g", "p"], label: "Réglages", href: "/settings" },
+  { chord: "modifier", keys: ["⌘", "K"], label: "Recherche globale", action: "search" },
   { chord: "single", keys: ["?"], label: "Afficher les raccourcis", action: "help" },
 ];
 

@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { CommandPalette } from "@/components/command-palette/command-palette";
 import { ShortcutsHelp } from "@/components/keyboard/shortcuts-help";
 import { hasModifier, isTypingInField, SHORTCUTS } from "@/lib/keyboard/shortcuts";
 
@@ -10,6 +11,7 @@ const CHORD_TIMEOUT_MS = 1000;
 export function ShortcutsProvider() {
   const router = useRouter();
   const [helpOpen, setHelpOpen] = useState(false);
+  const [paletteOpen, setPaletteOpen] = useState(false);
 
   useEffect(() => {
     let leader: string | null = null;
@@ -24,6 +26,13 @@ export function ShortcutsProvider() {
     };
 
     const handler = (event: KeyboardEvent) => {
+      // Cmd+K / Ctrl+K opens the command palette — works even in inputs.
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        setPaletteOpen((o) => !o);
+        return;
+      }
+
       if (hasModifier(event)) return;
       if (isTypingInField(event.target)) return;
 
@@ -72,5 +81,10 @@ export function ShortcutsProvider() {
     };
   }, [router]);
 
-  return <ShortcutsHelp open={helpOpen} onOpenChange={setHelpOpen} />;
+  return (
+    <>
+      <ShortcutsHelp open={helpOpen} onOpenChange={setHelpOpen} />
+      <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
+    </>
+  );
 }

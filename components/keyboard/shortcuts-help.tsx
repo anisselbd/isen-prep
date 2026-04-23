@@ -11,6 +11,7 @@ type Props = {
 export function ShortcutsHelp({ open, onOpenChange }: Props) {
   const navItems = SHORTCUTS.filter((s) => s.chord === "nav");
   const singleItems = SHORTCUTS.filter((s) => s.chord === "single");
+  const modifierItems = SHORTCUTS.filter((s) => s.chord === "modifier");
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -27,7 +28,7 @@ export function ShortcutsHelp({ open, onOpenChange }: Props) {
               {navItems.map((s) => (
                 <li key={s.keys.join("+")} className="flex items-center justify-between">
                   <span>{s.label}</span>
-                  <KeyChord keys={s.keys} />
+                  <KeyChord keys={s.keys} separator="puis" />
                 </li>
               ))}
             </ul>
@@ -37,6 +38,12 @@ export function ShortcutsHelp({ open, onOpenChange }: Props) {
               Général
             </h3>
             <ul className="flex flex-col gap-2">
+              {modifierItems.map((s) => (
+                <li key={s.keys.join("+")} className="flex items-center justify-between">
+                  <span>{s.label}</span>
+                  <KeyChord keys={s.keys} separator="+" />
+                </li>
+              ))}
               {singleItems.map((s) => (
                 <li key={s.keys.join("+")} className="flex items-center justify-between">
                   <span>{s.label}</span>
@@ -55,14 +62,20 @@ export function ShortcutsHelp({ open, onOpenChange }: Props) {
   );
 }
 
-function KeyChord({ keys }: { keys: string[] }) {
+function KeyChord({
+  keys,
+  separator = "puis",
+}: {
+  keys: string[];
+  separator?: string;
+}) {
   return (
     <span className="flex items-center gap-1">
       {keys.map((k, i) => (
         <span key={i} className="flex items-center gap-1">
           <Kbd>{k}</Kbd>
           {i < keys.length - 1 ? (
-            <span className="text-xs text-muted-foreground">puis</span>
+            <span className="text-xs text-muted-foreground">{separator}</span>
           ) : null}
         </span>
       ))}
