@@ -9,6 +9,7 @@ export type Shortcut = {
 export const SHORTCUTS: Shortcut[] = [
   { chord: "nav", keys: ["g", "d"], label: "Dashboard", href: "/dashboard" },
   { chord: "nav", keys: ["g", "s"], label: "Matières", href: "/subjects" },
+  { chord: "nav", keys: ["g", "q"], label: "Quiz arcade", href: "/quiz" },
   { chord: "nav", keys: ["g", "e"], label: "Examen blanc", href: "/exam" },
   { chord: "nav", keys: ["g", "i"], label: "Entretien", href: "/interview" },
   { chord: "nav", keys: ["g", "r"], label: "Révision ciblée", href: "/review" },

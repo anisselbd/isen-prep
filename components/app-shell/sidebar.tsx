@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   BookOpen,
   FlaskConical,
+  Gamepad2,
   Gauge,
   GraduationCap,
   MessageSquare,
@@ -17,6 +18,7 @@ import { cn } from "@/lib/utils";
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard", icon: Gauge },
   { href: "/subjects", label: "Matières", icon: BookOpen },
+  { href: "/quiz", label: "Quiz", icon: Gamepad2 },
   { href: "/exam", label: "Examen", icon: Timer },
   { href: "/interview", label: "Entretien", icon: MessageSquare },
   { href: "/review", label: "Révision", icon: Repeat },
