@@ -1,6 +1,17 @@
 "use client";
 
-import { Flame, Heart, Play, RotateCcw, Timer, Trophy } from "lucide-react";
+import {
+  BookOpen,
+  ChevronDown,
+  Flame,
+  Heart,
+  Play,
+  RotateCcw,
+  Timer,
+  Trophy,
+  X,
+} from "lucide-react";
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkMath from "remark-math";
@@ -14,6 +25,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { recordQuizAttempt } from "./actions";
 
 export type QuizQuestion = {
   id: string;
@@ -32,6 +44,7 @@ type AnswerRecord = {
   question: QuizQuestion;
   correct: boolean;
   time_used_ms: number;
+  picked_index: number | null;
 };
 
 const QUESTION_TIME_MS = 15_000;
@@ -145,9 +158,24 @@ export function QuizGame({ questions }: { questions: QuizQuestion[] }) {
       setLastAnswerCorrect(correct);
       setAnswers((a) => [
         ...a,
-        { question: currentQuestion, correct, time_used_ms: timeUsed },
+        {
+          question: currentQuestion,
+          correct,
+          time_used_ms: timeUsed,
+          picked_index: pickedIndex,
+        },
       ]);
       setPhase("feedback");
+
+      // Fire-and-forget: record in DB so attempts feed into mastery.
+      recordQuizAttempt({
+        exercise_id: currentQuestion.id,
+        picked_index: pickedIndex ?? -1,
+        is_correct: correct,
+        time_seconds: Math.round(timeUsed / 1000),
+      }).catch(() => {
+        // Silent — game shouldn't stop if the network flickers.
+      });
 
       // Persist best score eagerly so the result screen shows it correctly
       // whichever exit path the player takes.
@@ -433,6 +461,97 @@ function QuizIntro({
   );
 }
 
+function WrongAnswerReview({ record }: { record: AnswerRecord }) {
+  const [open, setOpen] = useState(false);
+  const q = record.question;
+  const picked = record.picked_index ?? -1;
+  const lessonHref = `/subjects/${q.subject_id}/${q.topic_id}/lesson`;
+
+  return (
+    <div className="rounded-md border bg-card">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className="flex w-full items-start gap-3 px-3 py-2.5 text-left text-sm hover:bg-accent/40"
+        aria-expanded={open}
+      >
+        <X className="mt-0.5 size-4 shrink-0 text-red-500" aria-hidden="true" />
+        <div className="min-w-0 flex-1">
+          <div className="truncate font-medium">{q.topic_name}</div>
+          <div className="mt-0.5 line-clamp-1 text-xs text-muted-foreground [&>p]:mb-0">
+            <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
+              {q.question_md}
+            </ReactMarkdown>
+          </div>
+        </div>
+        <ChevronDown
+          className={cn(
+            "mt-0.5 size-4 shrink-0 text-muted-foreground transition-transform",
+            open && "rotate-180",
+          )}
+        />
+      </button>
+      {open ? (
+        <div className="flex flex-col gap-3 border-t px-3 py-3 text-sm">
+          <div className="[&>p]:mb-0">
+            <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
+              {q.question_md}
+            </ReactMarkdown>
+          </div>
+          <ul className="flex flex-col gap-1">
+            {q.choices.map((c, i) => {
+              const isCorrect = i === q.correct_index;
+              const isPicked = i === picked;
+              return (
+                <li
+                  key={i}
+                  className={cn(
+                    "flex items-center gap-2 rounded-md border px-2 py-1.5",
+                    isCorrect && "border-emerald-500 bg-emerald-500/10",
+                    !isCorrect && isPicked && "border-red-500 bg-red-500/10",
+                  )}
+                >
+                  <span className="font-mono text-xs text-muted-foreground">
+                    {String.fromCharCode(65 + i)}
+                  </span>
+                  <span className="flex-1 [&>p]:mb-0">
+                    <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
+                      {c}
+                    </ReactMarkdown>
+                  </span>
+                  {isCorrect ? (
+                    <span className="text-xs font-medium text-emerald-700 dark:text-emerald-400">
+                      bonne
+                    </span>
+                  ) : isPicked ? (
+                    <span className="text-xs font-medium text-red-700 dark:text-red-400">
+                      ton choix
+                    </span>
+                  ) : null}
+                </li>
+              );
+            })}
+          </ul>
+          {q.explanation_md ? (
+            <div className="rounded-md bg-muted/40 px-3 py-2 text-xs text-muted-foreground [&>p]:mb-0">
+              <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
+                {q.explanation_md}
+              </ReactMarkdown>
+            </div>
+          ) : null}
+          <Link
+            href={lessonHref}
+            className="inline-flex w-fit items-center gap-1.5 text-xs text-primary hover:underline"
+          >
+            <BookOpen className="size-3.5" />
+            Voir la leçon de {q.topic_name}
+          </Link>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 function QuizResult({
   score,
   bestScore,
@@ -470,6 +589,11 @@ function QuizResult({
     }
     return [...map.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3);
   }, [answers]);
+
+  const wrongAnswers = useMemo(
+    () => answers.filter((a) => !a.correct),
+    [answers],
+  );
 
   const isNewBest = score > 0 && score === bestScore;
   const gameOver = lives <= 0 && answers.length < totalQuestions;
@@ -539,6 +663,24 @@ function QuizResult({
           ) : null}
         </CardContent>
       </Card>
+
+      {wrongAnswers.length > 0 ? (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">
+              Revoir mes erreurs ({wrongAnswers.length})
+            </CardTitle>
+            <CardDescription>
+              Clique pour déplier. La bonne réponse est en vert, ton choix en rouge.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-2">
+            {wrongAnswers.map((a, i) => (
+              <WrongAnswerReview key={`${a.question.id}-${i}`} record={a} />
+            ))}
+          </CardContent>
+        </Card>
+      ) : null}
 
       <Button onClick={onRestart} size="lg" className="self-start">
         <RotateCcw className="size-4" />
