@@ -89,7 +89,7 @@ export default async function TopicHubPage({
         <h1 className="text-2xl font-semibold tracking-tight">{topic.name}</h1>
         <p className="mt-1 text-sm text-muted-foreground">{topic.description}</p>
         <div className="mt-4 flex items-center gap-3">
-          <Progress value={score * 100} className="max-w-xs" />
+          <Progress value={score * 100} className="max-w-xs" aria-label="Maîtrise du topic" />
           <span className="font-mono text-xs text-muted-foreground">
             {mastery?.confidence
               ? `Maîtrise ${Math.round(score * 100)}% (${mastery.confidence} essais)`

@@ -80,7 +80,7 @@ export default async function SubjectsPage() {
                       {Math.round(s.avg * 100)}%
                     </span>
                   </div>
-                  <Progress value={s.avg * 100} />
+                  <Progress value={s.avg * 100} aria-label="Maîtrise de la matière" />
                 </CardContent>
               </Card>
             </Link>

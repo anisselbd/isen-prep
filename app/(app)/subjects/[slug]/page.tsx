@@ -98,7 +98,7 @@ export default async function SubjectPage({
                   </CardHeader>
                   <CardContent className="pt-0">
                     <div className="flex items-center gap-3">
-                      <Progress value={score * 100} className="flex-1" />
+                      <Progress value={score * 100} className="flex-1" aria-label="Maîtrise du topic" />
                       <span className="font-mono text-xs text-muted-foreground">
                         {m?.confidence
                           ? `${Math.round(score * 100)}% · ${m.confidence} essais`

@@ -80,7 +80,7 @@ export function ExamClient({
           </CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col gap-4 text-sm">
-          <Progress value={(results.correct / results.total) * 100} />
+          <Progress value={(results.correct / results.total) * 100} aria-label="Score final de l'examen" />
           <ul className="flex flex-col gap-3">
             {exercises.map((ex, i) => {
               const r = results.per[i];
@@ -133,7 +133,7 @@ export function ExamClient({
         </div>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
-        <Progress value={((index + 1) / exercises.length) * 100} />
+        <Progress value={((index + 1) / exercises.length) * 100} aria-label="Progression examen" />
         <div className="rounded-md border bg-background p-4">
           <LessonRenderer markdown={current.question_md} />
         </div>

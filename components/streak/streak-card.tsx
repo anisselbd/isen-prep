@@ -64,7 +64,7 @@ export function StreakCard({ data }: { data: StreakData }) {
               {today_attempts} / {DAILY_GOAL_ATTEMPTS}
             </span>
           </div>
-          <Progress value={attemptsPct} />
+          <Progress value={attemptsPct} aria-label="Progression exercices du jour" />
         </div>
         <div>
           <div className="mb-1 flex items-center justify-between text-xs">
@@ -73,7 +73,7 @@ export function StreakCard({ data }: { data: StreakData }) {
               {today_reviews} / {DAILY_GOAL_REVIEWS}
             </span>
           </div>
-          <Progress value={reviewsPct} />
+          <Progress value={reviewsPct} aria-label="Progression flashcards du jour" />
         </div>
         {goalsHit ? (
           <p className="flex items-center gap-1 text-xs text-emerald-700 dark:text-emerald-400">
