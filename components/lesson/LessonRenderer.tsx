@@ -7,18 +7,19 @@ import { ExampleBox } from "./ExampleBox";
 // Lesson markdown conventions:
 //   - Inline math  : $...$
 //   - Block math   : $$...$$
-//   - Example box  : wrap content inside a blockquote starting with "> [!example]"
-//   - Colibrimo    : wrap inside "> [!colibrimo]" for the dedicated callout
-// The callout syntax is pre-processed to a custom marker, then rendered below.
+//   - Callouts     : `> [!example]`, `> [!colibrimo]`, `> [!warning]`, `> [!note]`, `> [!tip]`
+// Each callout is wrapped in a `> [!name]` prefix and content lines begin with `> `.
 
 function preprocess(md: string): string {
-  return md
-    .replace(/^>\s*\[!example\]\s*\n((?:>.*\n?)*)/gm, (_m, body: string) =>
-      `\n<div data-callout="example">\n\n${body.replace(/^>\s?/gm, "")}\n</div>\n`
-    )
-    .replace(/^>\s*\[!colibrimo\]\s*\n((?:>.*\n?)*)/gm, (_m, body: string) =>
-      `\n<div data-callout="colibrimo">\n\n${body.replace(/^>\s?/gm, "")}\n</div>\n`
+  const callouts = ["example", "colibrimo", "warning", "note", "tip"];
+  let out = md;
+  for (const name of callouts) {
+    const re = new RegExp(`^>\\s*\\[!${name}\\]\\s*\\n((?:>.*\\n?)*)`, "gm");
+    out = out.replace(re, (_m, body: string) =>
+      `\n<div data-callout="${name}">\n\n${body.replace(/^>\s?/gm, "")}\n</div>\n`
     );
+  }
+  return out;
 }
 
 const components: Components = {
@@ -57,18 +58,63 @@ const components: Components = {
     const callout = (props as { "data-callout"?: string })["data-callout"];
     if (callout === "example") return <ExampleBox>{children}</ExampleBox>;
     if (callout === "colibrimo") {
-      return (
-        <aside className="my-5 rounded-lg border border-emerald-300/70 bg-emerald-50/50 p-4 text-sm dark:border-emerald-900/40 dark:bg-emerald-950/30">
-          <div className="mb-1 text-xs font-medium uppercase tracking-wide text-emerald-700 dark:text-emerald-300">
-            Connexion Colibrimo
-          </div>
-          <div className="[&_p:last-child]:mb-0 [&_p]:mb-2">{children}</div>
-        </aside>
-      );
+      return <Callout label="Connexion Colibrimo" tone="emerald">{children}</Callout>;
+    }
+    if (callout === "warning") {
+      return <Callout label="Piège à éviter" tone="amber">{children}</Callout>;
+    }
+    if (callout === "note") {
+      return <Callout label="À savoir avant" tone="sky">{children}</Callout>;
+    }
+    if (callout === "tip") {
+      return <Callout label="Astuce" tone="violet">{children}</Callout>;
     }
     return <div>{children}</div>;
   },
 };
+
+type Tone = "emerald" | "amber" | "sky" | "violet";
+
+const TONE_CLASSES: Record<Tone, { box: string; label: string }> = {
+  emerald: {
+    box: "border-emerald-300/70 bg-emerald-50/50 dark:border-emerald-900/40 dark:bg-emerald-950/30",
+    label: "text-emerald-700 dark:text-emerald-300",
+  },
+  amber: {
+    box: "border-amber-300/70 bg-amber-50/60 dark:border-amber-900/40 dark:bg-amber-950/30",
+    label: "text-amber-800 dark:text-amber-300",
+  },
+  sky: {
+    box: "border-sky-300/70 bg-sky-50/60 dark:border-sky-900/40 dark:bg-sky-950/30",
+    label: "text-sky-700 dark:text-sky-300",
+  },
+  violet: {
+    box: "border-violet-300/70 bg-violet-50/60 dark:border-violet-900/40 dark:bg-violet-950/30",
+    label: "text-violet-700 dark:text-violet-300",
+  },
+};
+
+function Callout({
+  label,
+  tone,
+  children,
+}: {
+  label: string;
+  tone: Tone;
+  children: React.ReactNode;
+}) {
+  const cls = TONE_CLASSES[tone];
+  return (
+    <aside className={`my-5 rounded-lg border p-4 text-sm ${cls.box}`}>
+      <div
+        className={`mb-1 text-xs font-medium uppercase tracking-wide ${cls.label}`}
+      >
+        {label}
+      </div>
+      <div className="[&_p:last-child]:mb-0 [&_p]:mb-2">{children}</div>
+    </aside>
+  );
+}
 
 export function LessonRenderer({ markdown }: { markdown: string }) {
   return (

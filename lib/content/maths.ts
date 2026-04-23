@@ -8,43 +8,112 @@ export const MATHS_CONTENT: TopicContent[] = [
     topic_id: "maths.analyse.derivees",
     lessons: [
       {
-        title: "Dérivées : formules usuelles et composée",
-        estimated_minutes: 8,
-        content_md: `## Définition opérationnelle
+        title: "Dérivées : du sens physique aux formules",
+        estimated_minutes: 18,
+        content_md: `## Pourquoi tu dois maîtriser ça
 
-La dérivée $f'(x)$ mesure la **pente de la tangente** à $f$ en $x$ :
+La dérivée, c'est **l'outil qui répond à la question "ça change comment ?"**. Dès qu'une quantité varie — un courant, une vitesse, un coût, une erreur de modèle — on passe par une dérivée pour la décrire. Sans ça, pas de mécanique, pas de traitement du signal, pas d'optimisation, pas de machine learning. Le jury ISEN sait que c'est la brique de base de tout ce qui suit, donc c'est **le premier truc qu'il va tester**. On va la construire proprement, depuis l'intuition jusqu'aux cas tordus.
 
-$$f'(x) = \\lim_{h \\to 0} \\frac{f(x+h) - f(x)}{h}$$
+> [!note]
+> **Ce qu'il faut savoir avant d'attaquer** : tu dois être à l'aise avec la notion de **fonction** $f(x)$ (à chaque $x$ on associe une valeur), les **puissances** ($x^2$, $x^3$, $x^{-1} = 1/x$), l'**exponentielle** $e^x$ et le **logarithme** $\\ln x$ (sa fonction inverse), et les **fonctions trigonométriques** $\\sin$, $\\cos$. La notion de **limite** est utile mais pas indispensable pour ce cours — on va s'en servir uniquement pour la définition, puis on n'y touchera plus.
 
-## Formules à connaître
+## L'idée intuitive
+
+Imagine une voiture qui roule. À chaque instant $t$, sa position est $f(t)$. Sa **vitesse à l'instant $t$** est de combien de mètres elle avance **par seconde**, en cet instant précis. Pour la calculer, on prend deux instants très proches $t$ et $t + h$, on regarde la distance parcourue $f(t+h) - f(t)$, on divise par la durée $h$ :
+
+$$\\text{vitesse moyenne entre } t \\text{ et } t+h \\;=\\; \\frac{f(t+h) - f(t)}{h}$$
+
+Plus on choisit $h$ petit, plus cette "vitesse moyenne" se rapproche de la **vitesse instantanée**. Quand on fait tendre $h$ vers 0, on obtient la vitesse exacte à l'instant $t$. **C'est ça, la dérivée.** Sur un graphique, $f'(x)$ c'est la **pente de la tangente** à la courbe au point d'abscisse $x$ : ça dit si la courbe monte (pente positive), descend (pente négative) ou est plate (pente nulle, on est à un sommet ou un creux).
+
+## La définition formelle
+
+$$f'(x) \\;=\\; \\lim_{h \\to 0} \\frac{f(x+h) - f(x)}{h}$$
+
+On décode chaque morceau :
+- **$f(x+h) - f(x)$** : la variation de $f$ quand on avance de $h$ à partir de $x$.
+- **$/\\, h$** : on ramène cette variation à "par unité de $x$" (le taux d'accroissement).
+- **$\\lim_{h \\to 0}$** : on prend un $h$ infiniment petit, pour ne garder que la pente locale, pas une moyenne sur un intervalle large.
+
+Autres notations que tu vas croiser pour la même chose : $\\dfrac{df}{dx}$ (notation de Leibniz, très utilisée en physique) et $\\dot{f}$ (notation de Newton, pour les dérivations par rapport au temps). $f'(x)$, $\\dfrac{df}{dx}(x)$ et $\\dot f(x)$ désignent tous les trois la même chose.
+
+## Les formules usuelles
+
+Voici le tableau à connaître par cœur. Dans la colonne de droite, tu as le **résultat** ; en-dessous du tableau, une ligne courte pour dire **d'où ça vient**, pour que tu ne retiennes pas une liste arbitraire.
 
 | $f(x)$ | $f'(x)$ |
 |--------|---------|
-| $x^n$ | $n\\,x^{n-1}$ |
+| $k$ (constante) | $0$ |
+| $x$ | $1$ |
+| $x^n$ (pour $n$ entier ou réel) | $n\\,x^{n-1}$ |
+| $\\sqrt{x} = x^{1/2}$ | $\\dfrac{1}{2\\sqrt{x}}$ |
+| $1/x = x^{-1}$ | $-1/x^2$ |
 | $e^x$ | $e^x$ |
-| $\\ln x$ | $1/x$ |
+| $\\ln x$ | $1/x$ (pour $x > 0$) |
 | $\\sin x$ | $\\cos x$ |
 | $\\cos x$ | $-\\sin x$ |
-| $\\tan x$ | $1 + \\tan^2 x = 1/\\cos^2 x$ |
+| $\\tan x$ | $1/\\cos^2 x = 1 + \\tan^2 x$ |
 
-## Règles
+**Pourquoi $(x^n)' = n x^{n-1}$ ?** On applique la définition à $f(x) = x^n$ : quand on développe $(x+h)^n$ avec le binôme, le premier terme vaut $x^n$, le deuxième $n x^{n-1} h$, et tous les suivants contiennent $h^2$ ou plus. Donc $f(x+h) - f(x) = n x^{n-1} h + (\\text{termes en } h^2)$. On divise par $h$ et on fait tendre $h$ vers 0 : il ne reste que $n x^{n-1}$.
 
-- **Somme** : $(f+g)' = f' + g'$
-- **Produit** : $(fg)' = f'g + fg'$
-- **Quotient** : $(f/g)' = (f'g - fg')/g^2$
-- **Composée** (chain rule) : $(f \\circ g)'(x) = f'(g(x)) \\cdot g'(x)$
+**Pourquoi $(e^x)' = e^x$ ?** C'est exactement la propriété qui **définit** $e$ : c'est l'unique base pour laquelle la fonction exponentielle est sa propre dérivée. C'est pour ça que $e^x$ est partout en physique : c'est la fonction qui "croît proportionnellement à elle-même".
+
+**Pourquoi $(\\sin x)' = \\cos x$ ?** Géométriquement : sur le cercle trigonométrique, si tu te déplaces d'un petit angle $h$ à partir d'un point, la variation verticale ($\\sin$) est pilotée par la composante horizontale de la tangente, qui vaut $\\cos$.
+
+## Les quatre règles de calcul
+
+Dans 99% des cas tu n'appliques **jamais** la définition avec la limite — tu composes les formules du tableau avec ces 4 règles.
+
+**1. Somme** : $(f + g)' = f' + g'$. La dérivée d'une somme = somme des dérivées. Même chose pour la soustraction.
+
+**2. Constante multiplicative** : $(k \\cdot f)' = k \\cdot f'$. Une constante devant la fonction "sort" de la dérivée sans rien changer.
+
+**3. Produit** : $(f \\cdot g)' = f' \\cdot g + f \\cdot g'$. **Attention**, ce n'est **pas** $f' \\cdot g'$ — c'est le piège classique. Exemple court : $f(x) = x \\cdot \\sin x$, donc $f'(x) = 1 \\cdot \\sin x + x \\cdot \\cos x = \\sin x + x \\cos x$.
+
+**4. Quotient** : $\\left(\\dfrac{f}{g}\\right)' = \\dfrac{f' \\cdot g - f \\cdot g'}{g^2}$. Mnémotechnique : "**Haut' bas moins haut bas'**, sur **bas au carré**" (c'est $f'g - fg'$ sur $g^2$, attention à l'ordre).
+
+**5. Composée (la plus importante pour l'ingé)** : $(f \\circ g)'(x) = f'(g(x)) \\cdot g'(x)$. On la lit : "dérivée de l'extérieur évaluée à l'intérieur, fois la dérivée de l'intérieur". C'est la **chain rule**, celle qu'utilisent tous les algos de deep learning pour rétropropager l'erreur couche par couche.
 
 > [!example]
-> $f(x) = \\sin(3x^2)$ :
-> - $u = 3x^2$, $u' = 6x$
-> - $(\\sin u)' = \\cos(u) \\cdot u' = 6x \\cos(3x^2)$
+> **Trois dérivations détaillées, de la plus simple à la plus corsée.**
+>
+> **(a) Polynôme.** $f(x) = 3x^4 - 5x^2 + 7x - 2$.
+> - Terme par terme : $(3x^4)' = 3 \\cdot 4 x^3 = 12 x^3$, $(5x^2)' = 10 x$, $(7x)' = 7$, $(2)' = 0$.
+> - Bilan : $f'(x) = 12 x^3 - 10 x + 7$.
+>
+> **(b) Composée trigonométrique.** $f(x) = \\sin(3x^2)$.
+> - On identifie l'**intérieur** : $g(x) = 3x^2$, donc $g'(x) = 6x$.
+> - L'**extérieur** est $\\sin$, sa dérivée est $\\cos$.
+> - Chain rule : $f'(x) = \\cos(g(x)) \\cdot g'(x) = \\cos(3x^2) \\cdot 6x = 6x \\cos(3x^2)$.
+>
+> **(c) Produit + composée.** $f(x) = x^2 \\cdot e^{-x}$.
+> - On identifie le produit : $u = x^2$, $v = e^{-x}$.
+> - $u' = 2x$ (tableau).
+> - $v' = e^{-x} \\cdot (-1) = -e^{-x}$ (chain rule avec extérieur $e^y$, intérieur $-x$).
+> - Produit : $f'(x) = u'v + uv' = 2x \\cdot e^{-x} + x^2 \\cdot (-e^{-x}) = e^{-x}(2x - x^2) = x(2 - x)e^{-x}$.
 
-## Étude de fonction
+> [!warning]
+> **Les pièges qui coûtent des points au jury.**
+>
+> - **Oublier la chain rule** quand il y a une fonction composée. $(\\sin(2x))' = 2\\cos(2x)$, **pas** $\\cos(2x)$. Dès que tu vois "quelque chose autour de $x$", réflexe chain rule.
+> - **Dériver le produit comme une somme.** $(fg)' \\ne f'g'$. Si tu écris ça, tu perds le point.
+> - **Signe du cosinus dérivé.** $(\\cos x)' = -\\sin x$, pas $+\\sin x$. Le signe moins est systématique.
+> - **Condition d'existence du $\\ln$.** $(\\ln x)' = 1/x$ **uniquement pour $x > 0$**. Si la fonction est $\\ln|x|$, la formule reste $1/x$ mais le domaine change.
+> - **Simplifier trop tôt.** Avant de dériver $\\dfrac{\\sin x}{x}$, tu ne peux pas "simplifier par $x$" — garde le quotient et applique la règle.
 
-Pour étudier $f$ : calculer $f'$, résoudre $f'(x) = 0$ pour trouver les extrema, signer $f'$ pour les variations.
+## À quoi ça sert : étudier une fonction
+
+Le plan type d'une étude de fonction est toujours le même.
+
+1. **Calculer $f'(x)$** avec les règles ci-dessus.
+2. **Résoudre $f'(x) = 0$** pour trouver les **extrema** candidats (sommets, creux, points d'inflexion horizontaux).
+3. **Signer $f'$** sur chaque intervalle : si $f' > 0$, $f$ croît ; si $f' < 0$, $f$ décroît.
+4. **Dresser le tableau de variations** avec les signes de $f'$ et les valeurs de $f$ aux points clés.
+
+> [!tip]
+> **Truc pour retenir la chain rule** : quand tu vois une fonction "emballée" (quelque chose entre parenthèses, sous un $\\sin$, sous un $e$, etc.), demande-toi toujours : "je dérive **l'emballage**, puis je **multiplie** par la dérivée de **ce qu'il y a dedans**". Ce réflexe à lui seul évite 80% des erreurs.
 
 > [!colibrimo]
-> Les dérivées partielles ont exactement la même mécanique — on les verra dans les algos de gradient descent qu'on utilise pour tuner les modèles. Comprendre $f'$ ici, c'est comprendre comment un LLM apprend.`,
+> La chain rule, c'est exactement ce que fait la **backpropagation** dans un réseau de neurones (le truc qui entraîne GPT, Gemini et les modèles qu'on utilise sur Colibrimo). Chaque couche est une fonction ; l'erreur finale est une composée de toutes ces fonctions ; pour savoir comment ajuster les poids d'une couche cachée, on applique la chain rule couche par couche en remontant. Comprendre $(f \\circ g)'(x) = f'(g(x)) \\cdot g'(x)$ ici, c'est comprendre **comment un LLM apprend**.`,
       },
     ],
     exercises: [
