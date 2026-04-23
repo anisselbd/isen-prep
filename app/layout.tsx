@@ -68,16 +68,27 @@ export default function RootLayout({
             `apple-mobile-web-app-capable` tag to treat the site as a PWA
             (and therefore to honor the startup images below). */}
         <meta name="apple-mobile-web-app-capable" content="yes" />
-        {/* iOS splash screens — PWA launched from home screen */}
-        <link rel="apple-touch-startup-image" href="/splash/iphone-14-pro-max.png" media="(device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" />
-        <link rel="apple-touch-startup-image" href="/splash/iphone-14-pro.png"     media="(device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" />
-        <link rel="apple-touch-startup-image" href="/splash/iphone-14-plus.png"    media="(device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" />
-        <link rel="apple-touch-startup-image" href="/splash/iphone-14.png"         media="(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" />
-        <link rel="apple-touch-startup-image" href="/splash/iphone-xs-11pro.png"   media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" />
-        <link rel="apple-touch-startup-image" href="/splash/iphone-xr-11.png"      media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" />
-        <link rel="apple-touch-startup-image" href="/splash/iphone-se-8.png"       media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" />
-        {/* Fallback for any other device — iOS uses this when no media matches. */}
-        <link rel="apple-touch-startup-image" href="/splash/iphone-14-pro-max.png" />
+        {/* iOS splash screens — PWA launched from home screen.
+            Each device × (light | dark) to match the app background and avoid
+            a jarring color flash during launch. */}
+        {/* Light mode */}
+        <link rel="apple-touch-startup-image" href="/splash/iphone-14-pro-max-light.png" media="(device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait) and (prefers-color-scheme: light)" />
+        <link rel="apple-touch-startup-image" href="/splash/iphone-14-pro-light.png"     media="(device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait) and (prefers-color-scheme: light)" />
+        <link rel="apple-touch-startup-image" href="/splash/iphone-14-plus-light.png"    media="(device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait) and (prefers-color-scheme: light)" />
+        <link rel="apple-touch-startup-image" href="/splash/iphone-14-light.png"         media="(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait) and (prefers-color-scheme: light)" />
+        <link rel="apple-touch-startup-image" href="/splash/iphone-xs-11pro-light.png"   media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait) and (prefers-color-scheme: light)" />
+        <link rel="apple-touch-startup-image" href="/splash/iphone-xr-11-light.png"      media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait) and (prefers-color-scheme: light)" />
+        <link rel="apple-touch-startup-image" href="/splash/iphone-se-8-light.png"       media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait) and (prefers-color-scheme: light)" />
+        {/* Dark mode */}
+        <link rel="apple-touch-startup-image" href="/splash/iphone-14-pro-max-dark.png" media="(device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait) and (prefers-color-scheme: dark)" />
+        <link rel="apple-touch-startup-image" href="/splash/iphone-14-pro-dark.png"     media="(device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait) and (prefers-color-scheme: dark)" />
+        <link rel="apple-touch-startup-image" href="/splash/iphone-14-plus-dark.png"    media="(device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait) and (prefers-color-scheme: dark)" />
+        <link rel="apple-touch-startup-image" href="/splash/iphone-14-dark.png"         media="(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait) and (prefers-color-scheme: dark)" />
+        <link rel="apple-touch-startup-image" href="/splash/iphone-xs-11pro-dark.png"   media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait) and (prefers-color-scheme: dark)" />
+        <link rel="apple-touch-startup-image" href="/splash/iphone-xr-11-dark.png"      media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait) and (prefers-color-scheme: dark)" />
+        <link rel="apple-touch-startup-image" href="/splash/iphone-se-8-dark.png"       media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait) and (prefers-color-scheme: dark)" />
+        {/* Fallback for any other device/orientation. */}
+        <link rel="apple-touch-startup-image" href="/splash/iphone-14-pro-max-light.png" />
       </head>
       <body className="min-h-full flex flex-col font-sans">
         <ThemeProvider

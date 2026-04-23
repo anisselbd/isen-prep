@@ -7,8 +7,10 @@ const SVG_PATH = join(ROOT, "public/icons/icon.svg");
 const OUT_DIR = join(ROOT, "public/icons");
 const SPLASH_DIR = join(ROOT, "public/splash");
 
-// Brand dark background (matches manifest.json background_color).
-const BG = { r: 15, g: 23, b: 42 };
+// Brand dark background (matches manifest.json background_color + dark app bg).
+const BG_DARK = { r: 37, g: 37, b: 37 }; // matches oklch(0.145 0 0), dark-mode body
+const BG_LIGHT = { r: 255, g: 255, b: 255 }; // matches oklch(1 0 0), light-mode body
+const BG_ICON = { r: 15, g: 23, b: 42 }; // #0f172a, used for maskable icon padding
 
 const ICON_SIZES: Array<{ size: number; name: string; maskable?: boolean }> = [
   { size: 192, name: "icon-192.png" },
@@ -17,18 +19,33 @@ const ICON_SIZES: Array<{ size: number; name: string; maskable?: boolean }> = [
   { size: 180, name: "apple-touch-icon.png" },
 ];
 
-// iPhone splash sizes (portrait, 2x-3x pixel ratios).
-// Source: WebKit-supported apple-touch-startup-image media queries.
-// Keeping the most common 7 — covers ~95 % of iPhones in use.
-const SPLASH_SIZES: Array<{ w: number; h: number; name: string; media: string }> = [
-  { w: 1290, h: 2796, name: "iphone-14-pro-max.png", media: "(device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3)" },
-  { w: 1179, h: 2556, name: "iphone-14-pro.png",     media: "(device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3)" },
-  { w: 1284, h: 2778, name: "iphone-14-plus.png",    media: "(device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3)" },
-  { w: 1170, h: 2532, name: "iphone-14.png",         media: "(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3)" },
-  { w: 1125, h: 2436, name: "iphone-xs-11pro.png",   media: "(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3)" },
-  { w: 828,  h: 1792, name: "iphone-xr-11.png",      media: "(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2)" },
-  { w: 750,  h: 1334, name: "iphone-se-8.png",       media: "(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2)" },
+// iPhone splash sizes (portrait). Each will be generated in light and dark.
+const SPLASH_SIZES: Array<{ w: number; h: number; base: string }> = [
+  { w: 1290, h: 2796, base: "iphone-14-pro-max" },
+  { w: 1179, h: 2556, base: "iphone-14-pro" },
+  { w: 1284, h: 2778, base: "iphone-14-plus" },
+  { w: 1170, h: 2532, base: "iphone-14" },
+  { w: 1125, h: 2436, base: "iphone-xs-11pro" },
+  { w: 828, h: 1792, base: "iphone-xr-11" },
+  { w: 750, h: 1334, base: "iphone-se-8" },
 ];
+
+/**
+ * Minimal inline logo rendered as an SVG string for splash screens.
+ * Keeps the "IP · ISEN · green dot" identity but WITHOUT the rounded
+ * background box so it blends into the splash canvas color.
+ */
+function buildBareLogoSvg(scheme: "light" | "dark"): string {
+  const main = scheme === "light" ? "#0f172a" : "#f8fafc";
+  const sub = scheme === "light" ? "#64748b" : "#94a3b8";
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <g font-family="system-ui, -apple-system, Segoe UI, Helvetica, Arial, sans-serif" font-weight="800" text-anchor="middle">
+    <text x="256" y="232" font-size="200" fill="${main}" letter-spacing="-8">IP</text>
+    <text x="256" y="340" font-size="50" fill="${sub}" letter-spacing="8">ISEN</text>
+  </g>
+  <circle cx="256" cy="400" r="10" fill="#22c55e"/>
+</svg>`;
+}
 
 async function buildIcon(svg: Buffer, opts: { size: number; name: string; maskable?: boolean }) {
   let pipeline = sharp(svg, { density: 512 }).resize(opts.size, opts.size);
@@ -38,7 +55,7 @@ async function buildIcon(svg: Buffer, opts: { size: number; name: string; maskab
       bottom: Math.round(opts.size * 0.1),
       left: Math.round(opts.size * 0.1),
       right: Math.round(opts.size * 0.1),
-      background: { ...BG, alpha: 1 },
+      background: { ...BG_ICON, alpha: 1 },
     });
   }
   const buf = await pipeline.png().toBuffer();
@@ -46,11 +63,12 @@ async function buildIcon(svg: Buffer, opts: { size: number; name: string; maskab
   console.log(`✓ icons/${opts.name} (${opts.size}×${opts.size}${opts.maskable ? ", maskable" : ""})`);
 }
 
-async function buildSplash(svg: Buffer, opts: { w: number; h: number; name: string }) {
-  // Render the SVG at ~35 % of the smallest side — a centered logo with
-  // generous padding looks best across device aspect ratios.
+async function buildSplash(
+  logoSvg: Buffer,
+  opts: { w: number; h: number; name: string; bg: { r: number; g: number; b: number } },
+) {
   const logoSize = Math.round(Math.min(opts.w, opts.h) * 0.32);
-  const logo = await sharp(svg, { density: 1024 })
+  const logo = await sharp(logoSvg, { density: 1024 })
     .resize(logoSize, logoSize)
     .png()
     .toBuffer();
@@ -60,7 +78,7 @@ async function buildSplash(svg: Buffer, opts: { w: number; h: number; name: stri
       width: opts.w,
       height: opts.h,
       channels: 4,
-      background: { ...BG, alpha: 1 },
+      background: { ...opts.bg, alpha: 1 },
     },
   });
 
@@ -81,8 +99,9 @@ async function buildSplash(svg: Buffer, opts: { w: number; h: number; name: stri
 
 async function main() {
   const svg = await readFile(SVG_PATH);
+  const lightLogo = Buffer.from(buildBareLogoSvg("light"));
+  const darkLogo = Buffer.from(buildBareLogoSvg("dark"));
 
-  // Ensure splash directory exists.
   const { mkdir } = await import("node:fs/promises");
   await mkdir(SPLASH_DIR, { recursive: true });
 
@@ -90,8 +109,19 @@ async function main() {
     await buildIcon(svg, opts);
   }
 
-  for (const opts of SPLASH_SIZES) {
-    await buildSplash(svg, opts);
+  for (const s of SPLASH_SIZES) {
+    await buildSplash(lightLogo, {
+      w: s.w,
+      h: s.h,
+      name: `${s.base}-light.png`,
+      bg: BG_LIGHT,
+    });
+    await buildSplash(darkLogo, {
+      w: s.w,
+      h: s.h,
+      name: `${s.base}-dark.png`,
+      bg: BG_DARK,
+    });
   }
 }
 
@@ -99,5 +129,3 @@ main().catch((err) => {
   console.error(err);
   process.exit(1);
 });
-
-export { SPLASH_SIZES };
