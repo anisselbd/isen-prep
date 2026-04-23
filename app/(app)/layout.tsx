@@ -24,7 +24,7 @@ export default async function AppLayout({
   return (
     <div className="grid min-h-dvh grid-cols-[240px_1fr]">
       <aside className="row-span-2">
-        <Sidebar />
+        <Sidebar showDev={process.env.NODE_ENV === "development"} />
       </aside>
       <div className="flex min-w-0 flex-col">
         <Topbar

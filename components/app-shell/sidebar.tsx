@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   BookOpen,
+  FlaskConical,
   Gauge,
   GraduationCap,
   MessageSquare,
@@ -22,8 +23,13 @@ const NAV_ITEMS = [
   { href: "/settings", label: "Réglages", icon: Settings },
 ];
 
-export function Sidebar() {
+const DEV_ITEMS = [
+  { href: "/dev/exercise-gallery", label: "Gallery (dev)", icon: FlaskConical },
+];
+
+export function Sidebar({ showDev = false }: { showDev?: boolean }) {
   const pathname = usePathname();
+  const items = showDev ? [...NAV_ITEMS, ...DEV_ITEMS] : NAV_ITEMS;
   return (
     <nav
       aria-label="Navigation principale"
@@ -34,7 +40,7 @@ export function Sidebar() {
         <span className="text-base font-semibold tracking-tight">ISEN PREP</span>
       </div>
       <ul className="flex flex-col gap-1">
-        {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
+        {items.map(({ href, label, icon: Icon }) => {
           const active =
             pathname === href || pathname.startsWith(`${href}/`);
           return (

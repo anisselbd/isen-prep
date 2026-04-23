@@ -1,20 +1,48 @@
 import type { Metadata } from "next";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { createClient } from "@/lib/supabase/server";
 import { isGeminiConfigured } from "@/lib/env";
+import { ProfileForm } from "./profile-form";
 
 export const metadata: Metadata = { title: "Réglages · ISEN PREP" };
 
-export default function SettingsPage() {
+export default async function SettingsPage() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("display_name, target_interview_date")
+    .eq("id", user?.id ?? "")
+    .maybeSingle();
+
   const geminiOk = isGeminiConfigured();
+
   return (
     <div className="flex flex-col gap-6">
       <header>
         <h1 className="text-2xl font-semibold tracking-tight">Réglages</h1>
         <p className="text-sm text-muted-foreground">
-          Gestion du profil et intégrations.
+          Profil, date de l&apos;entretien et intégrations.
         </p>
       </header>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Profil</CardTitle>
+          <CardDescription>Ton nom et la date cible.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ProfileForm
+            displayName={profile?.display_name ?? null}
+            targetDate={profile?.target_interview_date ?? null}
+          />
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader>
           <CardTitle>Intégrations</CardTitle>
