@@ -1,13 +1,4 @@
 User-agent: *
-Allow: /$
-Allow: /login
-Disallow: /dashboard
-Disallow: /subjects
-Disallow: /exam
-Disallow: /interview
-Disallow: /review
-Disallow: /settings
+Allow: /
 Disallow: /api/
 Disallow: /auth/
-
-Sitemap: https://isen-prep.vercel.app/sitemap.xml
