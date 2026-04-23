@@ -1,5 +1,6 @@
 import { LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { signOut } from "@/app/(app)/actions";
 
 type TopbarProps = {
@@ -16,12 +17,15 @@ export function Topbar({ email, displayName }: TopbarProps) {
           <span className="text-xs text-muted-foreground">{email}</span>
         ) : null}
       </div>
-      <form action={signOut}>
-        <Button type="submit" variant="ghost" size="sm">
-          <LogOut className="size-4" aria-hidden="true" />
-          <span className="ml-2">Déconnexion</span>
-        </Button>
-      </form>
+      <div className="flex items-center gap-1">
+        <ThemeToggle />
+        <form action={signOut}>
+          <Button type="submit" variant="ghost" size="sm">
+            <LogOut className="size-4" aria-hidden="true" />
+            <span className="ml-2">Déconnexion</span>
+          </Button>
+        </form>
+      </div>
     </header>
   );
 }
