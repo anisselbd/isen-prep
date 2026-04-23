@@ -6,8 +6,11 @@ import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { CoachCard } from "@/components/coach/coach-card";
 import { MasteryHeatmap } from "@/components/dashboard/MasteryHeatmap";
+import { StreakCard } from "@/components/streak/streak-card";
 import { loadDashboardData } from "@/lib/dashboard/server";
 import { isGeminiConfigured } from "@/lib/env";
+import { loadStreakData } from "@/lib/streak/server";
+import { createClient } from "@/lib/supabase/server";
 import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "Dashboard · ISEN PREP" };
@@ -16,6 +19,8 @@ export default async function DashboardPage() {
   const data = await loadDashboardData();
   if (!data) return null;
   const geminiOk = isGeminiConfigured();
+  const supabase = await createClient();
+  const streakData = await loadStreakData(supabase, data.user_id);
 
   const daysLeft = data.target_interview_date
     ? Math.ceil(
@@ -112,6 +117,8 @@ export default async function DashboardPage() {
           </CardContent>
         </Card>
       </section>
+
+      <StreakCard data={streakData} />
 
       <CoachCard geminiConfigured={geminiOk} />
 
