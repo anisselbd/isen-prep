@@ -5,8 +5,12 @@ import {
   ChevronDown,
   Flame,
   Heart,
+  Pause,
   Play,
   RotateCcw,
+  SkipForward,
+  Snowflake,
+  Split,
   Timer,
   Trophy,
   X,
@@ -114,6 +118,20 @@ type AnswerRecord = {
   picked_index: number | null;
 };
 
+type PowerUpsState = {
+  fifty_fifty: number;
+  freeze: number;
+  skip: number;
+};
+
+const INITIAL_POWER_UPS: PowerUpsState = {
+  fifty_fifty: 2,
+  freeze: 2,
+  skip: 2,
+};
+
+const FREEZE_DURATION_MS = 5_000;
+
 const BEST_SCORE_KEY = "isen-prep:quiz-best";
 
 // Shuffle a copy of the array (Fisher-Yates).
@@ -191,6 +209,9 @@ export function QuizGame({ questions, subjects, masteryByTopic }: QuizGameProps)
   const [subjectFilter, setSubjectFilter] = useState<SubjectFilter>("all");
   const [difficultyFilter, setDifficultyFilter] = useState<DifficultyFilter>("all");
   const [weightedByWeakness, setWeightedByWeakness] = useState(false);
+  const [powerUps, setPowerUps] = useState<PowerUpsState>(INITIAL_POWER_UPS);
+  const [hiddenChoices, setHiddenChoices] = useState<Set<number>>(new Set());
+  const [freezeUntil, setFreezeUntil] = useState<number>(0);
   const startTimeRef = useRef<number>(0);
 
   useEffect(() => {
@@ -239,14 +260,22 @@ export function QuizGame({ questions, subjects, masteryByTopic }: QuizGameProps)
     setAnswers([]);
     setLastAnswerCorrect(null);
     setSelectedChoice(null);
+    setPowerUps(INITIAL_POWER_UPS);
+    setHiddenChoices(new Set());
+    setFreezeUntil(0);
     setPhase("playing");
     startTimeRef.current = Date.now();
   }, [filteredQuestions, masteryByTopic, mode, modeCfg.maxLives, modeCfg.questionCount, modeCfg.questionTimeMs, weightedByWeakness]);
 
-  // Game timer.
+  // Game timer — pauses while a freeze is active. We also bump a tick state
+  // every 100 ms so the UI re-renders even while frozen (to flip the "freeze
+  // active" badge back off when the freeze ends).
+  const [, setTick] = useState(0);
   useEffect(() => {
     if (phase !== "playing") return;
     const id = window.setInterval(() => {
+      setTick((t) => t + 1);
+      if (Date.now() < freezeUntil) return; // frozen — skip decrement
       setTimeLeftMs((prev) => {
         const next = prev - 100;
         if (next <= 0) {
@@ -257,9 +286,55 @@ export function QuizGame({ questions, subjects, masteryByTopic }: QuizGameProps)
       });
     }, 100);
     return () => window.clearInterval(id);
-  }, [phase, currentIndex]);
+  }, [phase, currentIndex, freezeUntil]);
 
   const currentQuestion: QuizQuestion | undefined = order[currentIndex];
+
+  const useFiftyFifty = useCallback(() => {
+    if (powerUps.fifty_fifty <= 0 || !currentQuestion || phase !== "playing") return;
+    if (hiddenChoices.size > 0) return; // already used this question
+    // Pick 2 wrong indices at random to hide.
+    const wrongIndices: number[] = [];
+    for (let i = 0; i < currentQuestion.choices.length; i++) {
+      if (i !== currentQuestion.correct_index) wrongIndices.push(i);
+    }
+    const shuffled = shuffle(wrongIndices);
+    const toHide = new Set(shuffled.slice(0, 2));
+    setHiddenChoices(toHide);
+    setPowerUps((p) => ({ ...p, fifty_fifty: p.fifty_fifty - 1 }));
+  }, [powerUps.fifty_fifty, currentQuestion, phase, hiddenChoices]);
+
+  const useFreeze = useCallback(() => {
+    if (powerUps.freeze <= 0 || phase !== "playing") return;
+    setFreezeUntil(Date.now() + FREEZE_DURATION_MS);
+    setPowerUps((p) => ({ ...p, freeze: p.freeze - 1 }));
+  }, [powerUps.freeze, phase]);
+
+  const useSkip = useCallback(() => {
+    if (powerUps.skip <= 0 || phase !== "playing" || !currentQuestion) return;
+    setPowerUps((p) => ({ ...p, skip: p.skip - 1 }));
+    // Record as a "skipped" answer — not counted as wrong, no life lost.
+    setAnswers((a) => [
+      ...a,
+      {
+        question: currentQuestion,
+        correct: false,
+        time_used_ms: modeCfg.questionTimeMs - timeLeftMs,
+        picked_index: null,
+      },
+    ]);
+    // Advance directly — no feedback phase.
+    if (currentIndex + 1 >= order.length) {
+      setPhase("result");
+    } else {
+      setCurrentIndex((i) => i + 1);
+      setTimeLeftMs(modeCfg.questionTimeMs);
+      setSelectedChoice(null);
+      setLastAnswerCorrect(null);
+      setHiddenChoices(new Set());
+      setFreezeUntil(0);
+    }
+  }, [powerUps.skip, phase, currentQuestion, currentIndex, order.length, modeCfg.questionTimeMs, timeLeftMs]);
 
   const endWithAnswer = useCallback(
     (correct: boolean, pickedIndex: number | null) => {
@@ -334,6 +409,8 @@ export function QuizGame({ questions, subjects, masteryByTopic }: QuizGameProps)
       setTimeLeftMs(modeCfg.questionTimeMs);
       setSelectedChoice(null);
       setLastAnswerCorrect(null);
+      setHiddenChoices(new Set());
+      setFreezeUntil(0);
       setPhase("playing");
     }
   }, [currentIndex, lives, modeCfg.questionTimeMs, order.length]);
@@ -432,9 +509,46 @@ export function QuizGame({ questions, subjects, masteryByTopic }: QuizGameProps)
         <div
           className={cn(
             "h-full transition-[width,background-color] duration-100 ease-linear",
-            timeLow ? "bg-red-500" : "bg-primary",
+            Date.now() < freezeUntil
+              ? "bg-sky-400"
+              : timeLow
+                ? "bg-red-500"
+                : "bg-primary",
           )}
           style={{ width: `${progressPct}%` }}
+        />
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2">
+        <PowerUpButton
+          icon={Split}
+          label="50:50"
+          count={powerUps.fifty_fifty}
+          disabled={
+            phase !== "playing" ||
+            powerUps.fifty_fifty === 0 ||
+            hiddenChoices.size > 0
+          }
+          onClick={useFiftyFifty}
+        />
+        <PowerUpButton
+          icon={Snowflake}
+          label={Date.now() < freezeUntil ? "Gel actif" : "Geler"}
+          count={powerUps.freeze}
+          disabled={
+            phase !== "playing" ||
+            powerUps.freeze === 0 ||
+            Date.now() < freezeUntil
+          }
+          onClick={useFreeze}
+          highlighted={Date.now() < freezeUntil}
+        />
+        <PowerUpButton
+          icon={SkipForward}
+          label="Passer"
+          count={powerUps.skip}
+          disabled={phase !== "playing" || powerUps.skip === 0}
+          onClick={useSkip}
         />
       </div>
 
@@ -470,16 +584,18 @@ export function QuizGame({ questions, subjects, masteryByTopic }: QuizGameProps)
             const showAsCorrect = phase === "feedback" && isCorrect;
             const showAsWrong =
               phase === "feedback" && isSelected && !isCorrect;
+            const isHidden = hiddenChoices.has(i);
             return (
               <button
                 key={i}
                 type="button"
-                disabled={phase === "feedback"}
+                disabled={phase === "feedback" || isHidden}
                 onClick={() =>
                   endWithAnswer(i === currentQuestion.correct_index, i)
                 }
                 className={cn(
                   "group flex w-full items-center gap-3 rounded-md border bg-card px-3 py-2.5 text-left text-sm transition-all",
+                  isHidden && "pointer-events-none opacity-30 line-through",
                   showAsCorrect
                     ? "border-emerald-500 bg-emerald-500/10 text-emerald-900 dark:text-emerald-200"
                     : showAsWrong
@@ -562,6 +678,51 @@ type QuizIntroProps = {
   setMode: (m: GameMode) => void;
   onStart: () => void;
 };
+
+function PowerUpButton({
+  icon: Icon,
+  label,
+  count,
+  disabled,
+  onClick,
+  highlighted,
+}: {
+  icon: typeof Snowflake;
+  label: string;
+  count: number;
+  disabled: boolean;
+  onClick: () => void;
+  highlighted?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className={cn(
+        "group flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs transition-colors",
+        highlighted
+          ? "border-sky-400 bg-sky-500/10 text-sky-700 dark:text-sky-300"
+          : disabled
+            ? "cursor-not-allowed border-muted bg-muted/20 text-muted-foreground/50"
+            : "border-border bg-card hover:border-primary/40 hover:bg-accent/40",
+      )}
+    >
+      <Icon className="size-3.5" aria-hidden="true" />
+      <span className="font-medium">{label}</span>
+      <span
+        className={cn(
+          "rounded-full px-1.5 py-0 font-mono text-[10px]",
+          disabled
+            ? "bg-muted/50 text-muted-foreground/50"
+            : "bg-muted text-foreground",
+        )}
+      >
+        {count}
+      </span>
+    </button>
+  );
+}
 
 function FilterChip({
   active,
