@@ -5,6 +5,7 @@ import "./globals.css";
 import { ServiceWorkerRegister } from "@/components/sw-register";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
+import { clientEnv } from "@/lib/env";
 
 const inter = Inter({
   variable: "--font-sans",
@@ -52,12 +53,17 @@ export const viewport: Viewport = {
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+  const supabaseOrigin = new URL(clientEnv.NEXT_PUBLIC_SUPABASE_URL).origin;
   return (
     <html
       lang="fr"
       suppressHydrationWarning
       className={`${inter.variable} ${jetbrainsMono.variable} h-full antialiased`}
     >
+      <head>
+        <link rel="preconnect" href={supabaseOrigin} crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href={supabaseOrigin} />
+      </head>
       <body className="min-h-full flex flex-col font-sans">
         <ThemeProvider
           attribute="class"
