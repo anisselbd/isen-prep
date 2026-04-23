@@ -16,6 +16,8 @@ import {
   Split,
   Timer,
   Trophy,
+  Volume2,
+  VolumeX,
   X,
 } from "lucide-react";
 import Link from "next/link";
@@ -38,6 +40,13 @@ import {
   reconcileAchievements,
   type GameStats,
 } from "./achievements";
+import {
+  loadSoundEnabled,
+  playAchievement,
+  playCorrect,
+  playWrong,
+  saveSoundEnabled,
+} from "./sound";
 
 export type QuizQuestion = {
   id: string;
@@ -220,7 +229,20 @@ export function QuizGame({ questions, subjects, masteryByTopic }: QuizGameProps)
   const [powerUps, setPowerUps] = useState<PowerUpsState>(INITIAL_POWER_UPS);
   const [hiddenChoices, setHiddenChoices] = useState<Set<number>>(new Set());
   const [freezeUntil, setFreezeUntil] = useState<number>(0);
+  const [soundEnabled, setSoundEnabled] = useState(true);
   const startTimeRef = useRef<number>(0);
+
+  useEffect(() => {
+    setSoundEnabled(loadSoundEnabled());
+  }, []);
+
+  const toggleSound = useCallback(() => {
+    setSoundEnabled((prev) => {
+      const next = !prev;
+      saveSoundEnabled(next);
+      return next;
+    });
+  }, []);
 
   useEffect(() => {
     const stored = window.localStorage.getItem(BEST_SCORE_KEY);
@@ -387,6 +409,9 @@ export function QuizGame({ questions, subjects, masteryByTopic }: QuizGameProps)
       ]);
       setPhase("feedback");
 
+      if (correct) playCorrect(soundEnabled);
+      else playWrong(soundEnabled);
+
       // Fire-and-forget: record in DB so attempts feed into mastery.
       recordQuizAttempt({
         exercise_id: currentQuestion.id,
@@ -406,7 +431,7 @@ export function QuizGame({ questions, subjects, masteryByTopic }: QuizGameProps)
         } catch {}
       }
     },
-    [bestScore, combo, currentQuestion, lives, maxCombo, score, timeLeftMs],
+    [bestScore, combo, currentQuestion, lives, maxCombo, modeCfg.questionTimeMs, modeCfg.scoreMultiplier, score, soundEnabled, timeLeftMs],
   );
 
   const advanceToNext = useCallback(() => {
@@ -533,6 +558,18 @@ export function QuizGame({ questions, subjects, masteryByTopic }: QuizGameProps)
               />
             ))}
           </span>
+          <button
+            type="button"
+            onClick={toggleSound}
+            aria-label={soundEnabled ? "Couper le son" : "Activer le son"}
+            className="rounded-md p-1 text-muted-foreground hover:text-foreground"
+          >
+            {soundEnabled ? (
+              <Volume2 className="size-4" />
+            ) : (
+              <VolumeX className="size-4" />
+            )}
+          </button>
         </div>
       </div>
 
@@ -1071,6 +1108,12 @@ function QuizResult({
 }) {
   // Reconcile achievements once on mount (result screen).
   const [achievementsState] = useState(() => reconcileAchievements(gameStats));
+
+  useEffect(() => {
+    if (achievementsState.newly.length > 0) {
+      playAchievement(loadSoundEnabled());
+    }
+  }, [achievementsState.newly.length]);
   const correctCount = answers.filter((a) => a.correct).length;
   const accuracy =
     answers.length === 0
