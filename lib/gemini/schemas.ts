@@ -253,6 +253,72 @@ export const gradeAnswerZod = z.object({
   feedback_md: z.string().min(1),
 });
 
+// ---------------------------------------------------------------------------
+// coach-plan — personalized study plan generated from user stats
+// ---------------------------------------------------------------------------
+
+export const coachPlanResponseSchema: Schema = {
+  type: SchemaType.OBJECT,
+  properties: {
+    summary: {
+      type: SchemaType.STRING,
+      description: "2-3 phrases en français sur l'état actuel de la préparation.",
+    },
+    today_focus: {
+      type: SchemaType.ARRAY,
+      items: {
+        type: SchemaType.OBJECT,
+        properties: {
+          topic_id: {
+            type: SchemaType.STRING,
+            description: "id exact du topic (ex: maths.analyse.derivees)",
+          },
+          topic_name: { type: SchemaType.STRING },
+          reason: {
+            type: SchemaType.STRING,
+            description: "1 phrase expliquant pourquoi ce topic est prioritaire",
+          },
+          suggested_minutes: {
+            type: SchemaType.NUMBER,
+            description: "Durée suggérée en minutes, entre 15 et 60",
+          },
+          action: {
+            type: SchemaType.STRING,
+            description: "Une des actions : lesson, practice, flashcards",
+          },
+        },
+        required: ["topic_id", "topic_name", "reason", "suggested_minutes", "action"],
+      },
+      description: "2 à 3 items prioritaires pour aujourd'hui",
+    },
+    week_strategy: {
+      type: SchemaType.STRING,
+      description:
+        "Plan stratégique markdown (~100-150 mots) jusqu'à l'entretien, avec ordre d'attaque des matières.",
+    },
+  },
+  required: ["summary", "today_focus", "week_strategy"],
+};
+
+export const coachPlanZod = z.object({
+  summary: z.string().min(1),
+  today_focus: z
+    .array(
+      z.object({
+        topic_id: z.string().min(1),
+        topic_name: z.string().min(1),
+        reason: z.string().min(1),
+        suggested_minutes: z.number().min(5).max(120),
+        action: z.enum(["lesson", "practice", "flashcards"]),
+      }),
+    )
+    .min(1)
+    .max(5),
+  week_strategy: z.string().min(1),
+});
+
+export type CoachPlan = z.infer<typeof coachPlanZod>;
+
 export const interviewTurnZod = z.object({
   message: z.string().min(1),
   done: z.boolean(),

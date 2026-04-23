@@ -4,8 +4,10 @@ import { AlertTriangle, BookOpenCheck, CalendarClock, MessageSquareHeart, Target
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { CoachCard } from "@/components/coach/coach-card";
 import { MasteryHeatmap } from "@/components/dashboard/MasteryHeatmap";
 import { loadDashboardData } from "@/lib/dashboard/server";
+import { isGeminiConfigured } from "@/lib/env";
 import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "Dashboard · ISEN PREP" };
@@ -13,6 +15,7 @@ export const metadata: Metadata = { title: "Dashboard · ISEN PREP" };
 export default async function DashboardPage() {
   const data = await loadDashboardData();
   if (!data) return null;
+  const geminiOk = isGeminiConfigured();
 
   const daysLeft = data.target_interview_date
     ? Math.ceil(
@@ -109,6 +112,8 @@ export default async function DashboardPage() {
           </CardContent>
         </Card>
       </section>
+
+      <CoachCard geminiConfigured={geminiOk} />
 
       <section className="grid gap-4 lg:grid-cols-[2fr_1fr]">
         <Card>

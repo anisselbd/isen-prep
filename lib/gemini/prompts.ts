@@ -134,3 +134,64 @@ export function formatInterviewHistory(history: InterviewMessage[]): string {
     .map((m) => `${m.role === "jury" ? "JURY" : "CANDIDAT"} : ${m.content}`)
     .join("\n\n");
 }
+
+// ---------------------------------------------------------------------------
+// coach-plan — personalized study plan
+// ---------------------------------------------------------------------------
+
+type CoachStatsInput = {
+  days_until_interview: number | null;
+  due_flashcards: number;
+  total_attempts_week: number;
+  topics: Array<{
+    topic_id: string;
+    topic_name: string;
+    subject_name: string;
+    mastery_pct: number;
+    attempts: number;
+    cir_importance: number;
+  }>;
+};
+
+export function buildCoachPlanPrompt(stats: CoachStatsInput): string {
+  const topicsList = stats.topics
+    .map(
+      (t) =>
+        `- [${t.subject_name}] ${t.topic_name} (id=${t.topic_id}) — maîtrise ${t.mastery_pct}% sur ${t.attempts} tentatives, importance CIR ${t.cir_importance}/5`,
+    )
+    .join("\n");
+
+  const urgency =
+    stats.days_until_interview === null
+      ? "Date d'entretien non définie — raisonne sur ~7 jours par défaut."
+      : stats.days_until_interview <= 0
+        ? "Entretien déjà passé ou aujourd'hui."
+        : `J-${stats.days_until_interview} avant l'entretien.`;
+
+  return `Tu es un coach pédagogique qui produit un plan d'étude personnalisé.
+
+${CANDIDATE_CONTEXT}
+
+Urgence : ${urgency}
+Activité semaine passée : ${stats.total_attempts_week} tentatives d'exercices.
+Flashcards dues aujourd'hui : ${stats.due_flashcards}.
+
+État de maîtrise par topic (21 topics CIR) :
+${topicsList}
+
+Produis un plan d'étude JSON strict avec 3 parties :
+
+1. summary : 2-3 phrases sur l'état actuel (points forts, lacunes).
+2. today_focus : 2-3 topics prioritaires pour aujourd'hui. Critères pour prioriser :
+   - topic avec mastery_pct faible ET cir_importance haute > mastery_pct faible seul
+   - topic non encore abordé (attempts = 0) si importance CIR ≥ 4
+   - varie les matières (pas 3 maths d'affilée)
+   - action adaptée : "lesson" si attempts = 0, "practice" si déjà vu mais mastery < 70%, "flashcards" si des cartes sont dues
+3. week_strategy : markdown, ~100-150 mots, plan stratégique sur les jours restants. Mentionne l'ordre d'attaque des matières et un objectif quotidien réaliste (exos, leçons, flashcards).
+
+Règles :
+- Utilise EXACTEMENT les topic_id fournis (ex: maths.analyse.derivees).
+- today_focus : entre 2 et 3 items max. Pas plus.
+- Ton direct, tutoiement, pas de blabla motivationnel creux.
+- Si urgence forte (J-1, J-2), priorise révision / flashcards / exos plutôt que nouvelles leçons.`;
+}
