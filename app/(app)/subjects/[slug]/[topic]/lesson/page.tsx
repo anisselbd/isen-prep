@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { ChevronLeft, ChevronRight, Dumbbell } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { LessonRenderer } from "@/components/lesson/LessonRenderer";
+import { TtsControls } from "@/components/tts/tts-controls";
 import { buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
@@ -81,6 +82,8 @@ export default async function LessonPage({
           </Badge>
         </div>
       </header>
+
+      <TtsControls markdown={lesson.content_md} />
 
       <article className="rounded-lg border bg-card p-6">
         <LessonRenderer markdown={lesson.content_md} />
