@@ -9,7 +9,7 @@ function isPublic(pathname: string): boolean {
   if (pathname === "/") return true;
   if (pathname.startsWith("/_next")) return true;
   if (pathname.startsWith("/api")) return true;
-  if (/\.(svg|png|jpg|jpeg|gif|webp|ico|txt|xml|webmanifest)$/.test(pathname)) {
+  if (/\.(svg|png|jpg|jpeg|gif|webp|ico|txt|xml|webmanifest|json|js)$/.test(pathname)) {
     return true;
   }
   return PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`));

@@ -9,7 +9,8 @@
     "lint": "eslint",
     "test": "vitest run",
     "test:watch": "vitest",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "icons": "tsx scripts/generate-icons.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.4.1",
@@ -57,6 +58,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.2.4",
     "jsdom": "^29.0.2",
+    "sharp": "^0.34.5",
     "tailwindcss": "^4",
     "tsx": "^4.21.0",
     "typescript": "^5",
