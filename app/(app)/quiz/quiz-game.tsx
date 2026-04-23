@@ -10,6 +10,7 @@ import {
   Pause,
   Play,
   RotateCcw,
+  Share2,
   SkipForward,
   Snowflake,
   Sparkles,
@@ -47,6 +48,7 @@ import {
   playWrong,
   saveSoundEnabled,
 } from "./sound";
+import { shareResult } from "./share";
 
 export type QuizQuestion = {
   id: string;
@@ -1302,10 +1304,29 @@ function QuizResult({
         </Card>
       ) : null}
 
-      <Button onClick={onRestart} size="lg" className="self-start">
-        <RotateCcw className="size-4" />
-        Rejouer
-      </Button>
+      <div className="flex flex-wrap items-center gap-3">
+        <Button onClick={onRestart} size="lg">
+          <RotateCcw className="size-4" />
+          Rejouer
+        </Button>
+        <Button
+          onClick={() => {
+            void shareResult({
+              score,
+              mode_name: MODE_CONFIG[gameStats.mode_key as GameMode]?.name ?? "Classique",
+              max_combo: maxCombo,
+              correct_count: gameStats.correct_count,
+              total_answers: gameStats.total_answers,
+              is_new_best: score > 0 && score === bestScore,
+            });
+          }}
+          size="lg"
+          variant="outline"
+        >
+          <Share2 className="size-4" />
+          Partager mon score
+        </Button>
+      </div>
     </div>
   );
 }
