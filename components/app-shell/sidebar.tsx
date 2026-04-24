@@ -3,11 +3,14 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  BarChart3,
   BookOpen,
+  FileText,
   FlaskConical,
   Gamepad2,
   Gauge,
   GraduationCap,
+  Layers,
   MessageSquare,
   Repeat,
   Settings,
@@ -19,9 +22,12 @@ const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard", icon: Gauge },
   { href: "/subjects", label: "Matières", icon: BookOpen },
   { href: "/quiz", label: "Quiz", icon: Gamepad2 },
+  { href: "/flashcards", label: "Flashcards", icon: Layers },
   { href: "/exam", label: "Examen", icon: Timer },
   { href: "/interview", label: "Entretien", icon: MessageSquare },
   { href: "/review", label: "Révision", icon: Repeat },
+  { href: "/stats", label: "Stats", icon: BarChart3 },
+  { href: "/fiches", label: "Fiches", icon: FileText },
   { href: "/settings", label: "Réglages", icon: Settings },
 ];
 

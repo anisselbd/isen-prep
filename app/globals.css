@@ -127,4 +127,45 @@
   html {
     @apply font-sans;
   }
+
+  @media print {
+    aside,
+    header[class*="border-b bg-background"],
+    [data-react-grab-root] {
+      display: none !important;
+    }
+    main {
+      padding: 0 !important;
+      overflow: visible !important;
+    }
+    body {
+      background: #fff !important;
+      color: #000 !important;
+    }
+    .lesson-card {
+      page-break-inside: avoid;
+      break-inside: avoid;
+      margin-bottom: 1.5rem;
+    }
+    .subject-section {
+      page-break-before: always;
+      break-before: page;
+    }
+    .subject-section:first-of-type {
+      page-break-before: auto;
+      break-before: auto;
+    }
+    a {
+      color: #000 !important;
+      text-decoration: none !important;
+    }
+    article.prose-slate,
+    .prose-slate {
+      font-size: 10.5pt;
+      line-height: 1.4;
+    }
+    @page {
+      margin: 1.5cm;
+    }
+  }
 }

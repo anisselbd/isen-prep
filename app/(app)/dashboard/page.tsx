@@ -2,6 +2,10 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { CoachCard } from "@/components/coach/coach-card";
 import {
+  DailyPlanSection,
+  DailyPlanSectionSkeleton,
+} from "@/components/dashboard/sections/daily-plan-section";
+import {
   HeatmapSection,
   HeatmapSectionSkeleton,
 } from "@/components/dashboard/sections/heatmap-section";
@@ -48,6 +52,10 @@ export default async function DashboardPage() {
           Vue d&apos;ensemble de ta préparation à l&apos;entretien ISEN CIR.
         </p>
       </header>
+
+      <Suspense fallback={<DailyPlanSectionSkeleton />}>
+        <DailyPlanSection />
+      </Suspense>
 
       <Suspense fallback={<StatsSectionSkeleton />}>
         <StatsSection />
