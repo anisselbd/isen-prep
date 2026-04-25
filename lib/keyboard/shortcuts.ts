@@ -16,6 +16,7 @@ export const SHORTCUTS: Shortcut[] = [
   { chord: "nav", keys: ["g", "r"], label: "Révision ciblée", href: "/review" },
   { chord: "nav", keys: ["g", "t"], label: "Stats", href: "/stats" },
   { chord: "nav", keys: ["g", "h"], label: "Fiches", href: "/fiches" },
+  { chord: "nav", keys: ["g", "j"], label: "Prépa jury", href: "/interview-prep" },
   { chord: "nav", keys: ["g", "p"], label: "Réglages", href: "/settings" },
   { chord: "modifier", keys: ["⌘", "K"], label: "Recherche globale", action: "search" },
   { chord: "single", keys: ["?"], label: "Afficher les raccourcis", action: "help" },

@@ -14,6 +14,7 @@ import {
   MessageSquare,
   Repeat,
   Settings,
+  Sparkles,
   Timer,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -28,6 +29,7 @@ const NAV_ITEMS = [
   { href: "/review", label: "Révision", icon: Repeat },
   { href: "/stats", label: "Stats", icon: BarChart3 },
   { href: "/fiches", label: "Fiches", icon: FileText },
+  { href: "/interview-prep", label: "Prépa jury", icon: Sparkles },
   { href: "/settings", label: "Réglages", icon: Settings },
 ];
 
