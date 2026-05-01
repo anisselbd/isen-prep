@@ -4,6 +4,11 @@ import { createClient } from "@/lib/supabase/server";
 import { isGeminiConfigured } from "@/lib/env";
 import { runInterviewTurn } from "@/lib/gemini/interview";
 import { GeminiNotConfiguredError } from "@/lib/gemini/client";
+import { isGeminiQuotaError, isGeminiOverloadError } from "@/lib/gemini/errors";
+import {
+  enforceGeminiRateLimit,
+  GeminiRateLimitError,
+} from "@/lib/gemini/rate-limit";
 import type { Json } from "@/types/database";
 
 const messageSchema = z.object({
@@ -47,6 +52,15 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "non authentifié" }, { status: 401 });
   }
 
+  try {
+    await enforceGeminiRateLimit(user.id);
+  } catch (e) {
+    if (e instanceof GeminiRateLimitError) {
+      return NextResponse.json({ error: e.message }, { status: 429 });
+    }
+    throw e;
+  }
+
   // Start or resume a session row. The transcript is persisted after each
   // successful turn so refreshing the page doesn't lose context.
   let sessionId = parsed.data.session_id ?? null;
@@ -71,6 +85,21 @@ export async function POST(request: NextRequest) {
   } catch (e) {
     if (e instanceof GeminiNotConfiguredError) {
       return NextResponse.json({ error: e.message }, { status: 503 });
+    }
+    if (isGeminiQuotaError(e)) {
+      return NextResponse.json(
+        { error: "Quota IA atteint. Réessaie dans une minute." },
+        { status: 429 }
+      );
+    }
+    if (isGeminiOverloadError(e)) {
+      return NextResponse.json(
+        {
+          error:
+            "Le service Gemini est surchargé (free tier déprioritisé par Google). Réessaie dans quelques secondes.",
+        },
+        { status: 503 }
+      );
     }
     const msg = e instanceof Error ? e.message : "unknown Gemini error";
     return NextResponse.json({ error: msg }, { status: 502 });

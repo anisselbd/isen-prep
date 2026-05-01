@@ -243,6 +243,20 @@ export interface Database {
         >;
         Relationships: [];
       };
+      gemini_call_log: {
+        Row: {
+          id: number;
+          user_id: string;
+          called_at: string;
+        };
+        Insert: {
+          id?: number;
+          user_id: string;
+          called_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["gemini_call_log"]["Insert"]>;
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;

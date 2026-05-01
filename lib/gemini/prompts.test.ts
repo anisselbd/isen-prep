@@ -2,7 +2,6 @@ import { describe, it, expect } from "vitest";
 import {
   CANDIDATE_CONTEXT,
   buildGenerateExercisePrompt,
-  buildGradeAnswerPrompt,
   buildInterviewSystemPrompt,
   formatInterviewHistory,
 } from "./prompts";
@@ -66,20 +65,6 @@ describe("buildGenerateExercisePrompt", () => {
     expect(mcq).not.toEqual(code);
     expect(mcq).toMatch(/choix multiples/);
     expect(code).toMatch(/function_signature/);
-  });
-});
-
-describe("buildGradeAnswerPrompt", () => {
-  it("embeds the question + user answer + data", () => {
-    const p = buildGradeAnswerPrompt({
-      type: "text",
-      question_md: "Explique le RAG.",
-      data: { expected_key_points: ["retrieval"] },
-      user_answer: { text: "un truc vectoriel" },
-    });
-    expect(p).toMatch(/Explique le RAG/);
-    expect(p).toMatch(/un truc vectoriel/);
-    expect(p).toMatch(/retrieval/);
   });
 });
 

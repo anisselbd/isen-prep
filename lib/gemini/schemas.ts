@@ -203,22 +203,6 @@ export function generateExerciseResponseSchema(type: ExerciseType): Schema {
   };
 }
 
-export const gradeAnswerResponseSchema: Schema = {
-  type: SchemaType.OBJECT,
-  properties: {
-    score: {
-      type: SchemaType.NUMBER,
-      description: "Between 0 and 1 — how complete and correct the answer is",
-    },
-    is_correct: { type: SchemaType.BOOLEAN },
-    feedback_md: {
-      type: SchemaType.STRING,
-      description: "Short pedagogical feedback in French (2-4 lines)",
-    },
-  },
-  required: ["score", "is_correct", "feedback_md"],
-};
-
 export const interviewTurnResponseSchema: Schema = {
   type: SchemaType.OBJECT,
   properties: {
@@ -246,12 +230,6 @@ export const interviewTurnResponseSchema: Schema = {
 // ---------------------------------------------------------------------------
 // Zod validators — defense in depth against malformed Gemini output
 // ---------------------------------------------------------------------------
-
-export const gradeAnswerZod = z.object({
-  score: z.number().min(0).max(1),
-  is_correct: z.boolean(),
-  feedback_md: z.string().min(1),
-});
 
 // ---------------------------------------------------------------------------
 // coach-plan — personalized study plan generated from user stats

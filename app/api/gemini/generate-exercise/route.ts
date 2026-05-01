@@ -4,6 +4,11 @@ import { createClient, createServiceRoleClient } from "@/lib/supabase/server";
 import { isGeminiConfigured } from "@/lib/env";
 import { generateExerciseViaGemini } from "@/lib/gemini/generate";
 import { GeminiNotConfiguredError } from "@/lib/gemini/client";
+import { isGeminiQuotaError, isGeminiOverloadError } from "@/lib/gemini/errors";
+import {
+  enforceGeminiRateLimit,
+  GeminiRateLimitError,
+} from "@/lib/gemini/rate-limit";
 import type { Json } from "@/types/database";
 
 const bodySchema = z.object({
@@ -53,6 +58,15 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "non authentifié" }, { status: 401 });
   }
 
+  try {
+    await enforceGeminiRateLimit(user.id);
+  } catch (e) {
+    if (e instanceof GeminiRateLimitError) {
+      return NextResponse.json({ error: e.message }, { status: 429 });
+    }
+    throw e;
+  }
+
   // Load topic then its subject. Separate queries because the hand-written
   // Database type does not expose the topics→subjects relationship.
   const { data: topic, error: topicErr } = await supabase
@@ -87,6 +101,21 @@ export async function POST(request: NextRequest) {
   } catch (e) {
     if (e instanceof GeminiNotConfiguredError) {
       return NextResponse.json({ error: e.message }, { status: 503 });
+    }
+    if (isGeminiQuotaError(e)) {
+      return NextResponse.json(
+        { error: "Quota IA atteint. Réessaie dans une minute." },
+        { status: 429 }
+      );
+    }
+    if (isGeminiOverloadError(e)) {
+      return NextResponse.json(
+        {
+          error:
+            "Le service Gemini est surchargé (free tier déprioritisé par Google). Réessaie dans quelques secondes.",
+        },
+        { status: 503 }
+      );
     }
     const msg = e instanceof Error ? e.message : "unknown Gemini error";
     return NextResponse.json({ error: msg }, { status: 502 });

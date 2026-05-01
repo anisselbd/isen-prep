@@ -67,35 +67,6 @@ Règles strictes :
 }
 
 // ---------------------------------------------------------------------------
-// grade-answer
-// ---------------------------------------------------------------------------
-
-export function buildGradeAnswerPrompt(args: {
-  type: ExerciseType;
-  question_md: string;
-  data: unknown;
-  user_answer: unknown;
-}): string {
-  return `Tu es un correcteur pédagogique pour le programme ISEN CIR.
-
-${CANDIDATE_CONTEXT}
-
-Corrige la réponse du candidat à l'exercice ci-dessous.
-
-Type d'exercice : ${args.type}
-Énoncé : ${args.question_md}
-Données attendues : ${JSON.stringify(args.data)}
-Réponse du candidat : ${JSON.stringify(args.user_answer)}
-
-Évalue :
-1. score entre 0 et 1 (0.5 pour une réponse partielle correcte mais incomplète).
-2. is_correct = true si score ≥ 0.6.
-3. feedback_md : 2-4 lignes en français. Souligne ce qui est juste, ce qui manque ou est faux, et donne UNE piste concrète de progression.
-
-Sois exigeant mais bienveillant. Jamais condescendant.`;
-}
-
-// ---------------------------------------------------------------------------
 // interview-turn
 // ---------------------------------------------------------------------------
 
